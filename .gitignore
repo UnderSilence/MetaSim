@@ -9,3 +9,13 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+
+
+# Binary outputs
+build/
+cmake-*/
+
+# Configuration
+.vscode/
+.idea/
+
