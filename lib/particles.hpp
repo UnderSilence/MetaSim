@@ -34,7 +34,7 @@ public:
         return attr_array_ptr->attr_array;
     }
 
-protected:
+public:
     std::unordered_map<const char*, std::shared_ptr<IAttributeArray>> attr_arrays_;
 };
 

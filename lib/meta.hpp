@@ -9,7 +9,6 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-
 #include <Eigen/Core>
 
 using Real = double;

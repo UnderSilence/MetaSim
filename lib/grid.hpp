@@ -14,6 +14,7 @@ public:
 
 template<typename TGridData, int Dim>
 class Grid : public IGridBase {
+
 public:
     using T = Real;
     using TVI = Vec<Dim, int>;
@@ -58,6 +59,7 @@ public:
 
         for (int i = 0; i < total_size_; i++) {
             Xi_[i] = Coord(i);
+            nodes_[i] = init_value;
             printf("Xi of %d is (%d, %d, %d)\n", i, Xi_[i](0), Xi_[i](1), Xi_[i](2));
         }
     };
@@ -87,8 +89,8 @@ public:
         });
     }
 
-private:
-    size_t total_size_;
+protected:
+    size_t total_size_ = 0;
     std::array<size_t, Dim> shape_;
     std::vector<TGridData> nodes_;
     std::vector<TVI> Xi_;

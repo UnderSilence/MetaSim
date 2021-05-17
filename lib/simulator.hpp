@@ -26,10 +26,9 @@ public:
         return particles[group_id];
     }
 
-protected:
     virtual void step() = 0;
 
-private:
+public:
     std::vector<ParticleContainer> particles;
 };
 

@@ -5,6 +5,7 @@
 #include <iostream>
 #include "particles.hpp"
 #include "MPM/mpm_grid.hpp"
+#include "MPM/mpm_simulator.hpp"
 
 auto main() -> int {
     std::cout << "Hello MetaSim!" << std::endl;
@@ -30,6 +31,11 @@ auto main() -> int {
 
     MPMGrid<TestGridData, 3> grid;
     grid.InitializeGrid({5,5,5}, TestGridData());
+
+
+    MPMSimulator<3> simulator;
+
+
 
     return 0;
 }

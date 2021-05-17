@@ -1,5 +1,5 @@
 
 include_directories(../lib)
-include_directories(../external/Eigen)
+include_directories(../external/eigen)
 
 add_subdirectory(demo)
