@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "particles.hpp"
+#include "MPM/mpm_grid.hpp"
 
 auto main() -> int {
     std::cout << "Hello MetaSim!" << std::endl;
@@ -22,6 +23,13 @@ auto main() -> int {
         printf("mass[%d] = %f\n", i, mass_array_2[i]);
     }
 
+    struct TestGridData {
+        float x,y,z;
+        Vec<3, float> test_vec;
+    };
+
+    MPMGrid<TestGridData, 3> grid;
+    grid.InitializeGrid({5,5,5}, TestGridData());
 
     return 0;
 }
