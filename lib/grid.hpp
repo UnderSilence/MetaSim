@@ -16,7 +16,7 @@ template<typename TGridData, int Dim>
 class Grid : public IGridBase {
 
 public:
-    using T = Real;
+    using T = real;
     using TVI = Vec<Dim, int>;
     using TV = Vec<Dim, T>;
 

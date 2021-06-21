@@ -11,13 +11,12 @@
 #include <unordered_map>
 #include <Eigen/Core>
 
-using Real = double;
-constexpr int Dim = 3;
+using real = double;
 
-template<int Dim, typename Scalar = Real>
+template<int Dim, typename Scalar = real>
 using Vec = Eigen::Matrix<Scalar, Dim, 1>;
 
-template<int Row, int Col, typename Scalar = Real>
+template<int Row, int Col, typename Scalar = real>
 using Mat = Eigen::Matrix<Scalar, Row, Col>;
 
 #define NO_TBB

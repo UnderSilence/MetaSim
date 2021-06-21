@@ -16,7 +16,7 @@ public:
 template<typename KernelImpl, int Dim, int Order>
 struct MPMInterpolationKernel : InterpolationKernelBase {
 public:
-    using T = Real;
+    using T = real;
     using TVI = Vec<Dim, int>;
     using TV = Vec<Dim, T>;
 
