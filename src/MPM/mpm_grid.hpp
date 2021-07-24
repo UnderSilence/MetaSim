@@ -22,9 +22,9 @@ public:
     using Base::Index;
     using Base::Coord;
 
-    template<class TKernel, class OP>
-    void IterateNeighbor(const TV &xp, OP operate) {
-        auto[base_node, wp] = TKernel::calc_o_w(xp * inv_dx);
+    template<typename TKernel, class OP>
+    void IterateNeighbor(const TKernel& kernel, OP operate) {
+        auto[base_node, wp] = kernel.calc_o_w(xp * inv_dx);
 
         for (int i = 0; i < TKernel::order + 1; i++)
             for (int j = 0; j < TKernel::order + 1; j++)
@@ -32,13 +32,12 @@ public:
                     int index = Index(base_node + TVI(i, j, k));
                     T wijk = wp(i, 0) * wp(j, 1) * wp(k, 2);
                     operate(nodes_[index], Xi_[index], wijk);
-
                 }
     }
 
-    template<class TKernel, class OP>
-    void IterateNeighborWithGrad(const TV &xp, OP operate) {
-        auto[base_node, wp, dwp] = TKernel::calc_o_w_dw(xp * inv_dx);
+    template<typename TKernel, class OP>
+    void IterateNeighborWithGrad(const TKernel& kernel, OP operate) {
+        auto[base_node, wp, dwp] = kernel.calc_o_w_dw(xp * inv_dx);
 
         for (int i = 0; i < TKernel::order + 1; i++)
             for (int j = 0; j < TKernel::order + 1; j++)
@@ -52,8 +51,18 @@ public:
                 }
     }
 
+    template<typename OP>
+    void IterateTouchedGrid(OP operate) {
+
+    }
+
+    void TouchGridWithPositions(std::vector<Vec<Dim>>) {
+
+    }
+
 public:
     T dx, inv_dx;
+    std::vector<bool> is_touched;
 };
 
 #endif //METASIM_MPM_GRID_HPP

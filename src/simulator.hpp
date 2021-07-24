@@ -26,7 +26,7 @@ public:
         return particles[group_id];
     }
 
-    virtual void step() = 0;
+    virtual void Step() = 0;
 
 public:
     std::vector<ParticleContainer> particles;

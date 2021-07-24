@@ -12,7 +12,7 @@
 template<int Dim>
 class MPMSimulator : public Simulator<Dim> {
 public:
-    using T = Real;
+    using T = real;
     using TV = Vec<Dim, T>;
     using TVI = Vec<Dim, int>;
 
@@ -25,12 +25,12 @@ public:
     using Base::AddParticleGroup;
     using Base::GetParticleGroup;
 
-    virtual void Step();
+    virtual void Step() override {};
 
 public:
 
-    virtual void Particle2Grid();
-    virtual void Grid2Particle();
+    virtual void Particle2Grid() {};
+    virtual void Grid2Particle() {};
 
 public:
 
