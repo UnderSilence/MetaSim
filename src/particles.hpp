@@ -6,6 +6,7 @@
 #define METASIM_PARTICLES_HPP
 
 #include "meta.hpp"
+#include "Core/data_container.hpp"
 
 class IAttributeArray {
 public:

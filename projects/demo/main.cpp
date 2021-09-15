@@ -4,12 +4,12 @@
 
 #include <iostream>
 #include "particles.hpp"
-#include "MPM/mpm_grid.hpp"
-#include "MPM/mpm_simulator.hpp"
+// #include "MPM/mpm_grid.hpp"
+// #include "MPM/mpm_simulator.hpp"
 
 auto main() -> int {
     std::cout << "Hello MetaSim!" << std::endl;
-
+/*
     ParticleContainer particle_container;
     auto& mass_array = particle_container.SetAttrArray<real>("mass");
     int demo_size = 10;
@@ -34,8 +34,19 @@ auto main() -> int {
 
 
     MPMSimulator<3> simulator;
+*/
 
+    MS::Ranges ranges;
+    ranges.merge({1, 3});
+    ranges.merge({2, 6});
+    ranges.merge({3, 7});
+    std::cout << ranges << std::endl;
+    ranges.erase({3, 4});
+    std::cout << ranges << std::endl;
+    ranges.erase({5, 6});
+    std::cout << ranges << std::endl;
 
-
+    ranges.intersect({2, 6});
+    std::cout << ranges << std::endl;
     return 0;
 }
