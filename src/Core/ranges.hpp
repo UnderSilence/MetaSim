@@ -25,16 +25,24 @@ public:
     int length() const { return upper - lower; }
   };
 
+  // merge constructor
+  Ranges() = default;
+
+  template<typename... Rest> 
+  Ranges(const Interval& interval, Rest&&... rest) {
+    merge(interval, std::forward<Rest>(rest)...);
+  }
+
   std::set<Interval> intervals;
 
-  auto cbegin() const { return intervals.cbegin();}
-  auto cend() const {return intervals.cend();}
-  auto begin() const {return intervals.begin();}
-  auto end() const {return intervals.end(); }
+  auto cbegin() const { return intervals.cbegin(); }
+  auto cend() const { return intervals.cend(); }
+  auto begin() const { return intervals.begin(); }
+  auto end() const { return intervals.end(); }
   auto size() const { return intervals.size(); }
 
   template <typename... Rest>
-  void merge(const Interval &interval, const Rest &... rest) {
+  void merge(const Interval &interval, const Rest &...rest) {
     auto p = intervals.equal_range(interval);
     if (p.first == p.second) {
       // equal ranges not found, merge directly
@@ -67,19 +75,20 @@ public:
   }
   // void erase(int lower, int upper) { erase({lower, upper}); }
 
+  void intersect() {}
   void intersect(const Interval &interval) {
     auto p = intervals.equal_range(interval);
     if (p.first != p.second) {
       auto leftmost_upper = p.first->upper;
-      auto rightmost_lower = std::prev(p.second)->lower; 
+      auto rightmost_lower = std::prev(p.second)->lower;
       std::set<Interval> new_intervals;
-      if(std::distance(p.first, p.second) == 1) {
+      if (std::distance(p.first, p.second) == 1) {
         new_intervals.insert(interval.intersect(*p.first));
       } else {
         new_intervals.insert(std::next(p.first), std::prev(p.second));
         new_intervals.insert(interval.intersect(*p.first));
         new_intervals.insert(interval.intersect(*std::prev(p.second)));
-      } 
+      }
       std::swap(intervals, new_intervals);
 
     } else {
@@ -87,12 +96,30 @@ public:
       intervals.clear();
     }
   }
-  // void intersect(int lower, int upper) { intersect({lower, upper}); }
+
+  template <typename... Rest>
+  void intersect(const Ranges &other_ranges, const Rest &...rest) {
+    auto p = begin(), q = other_ranges.begin();
+    std::set<Interval> new_intervals;
+    while (p != end() && q != other_ranges.end()) {
+      auto intersection = p->intersect(*q);
+      if (intersection.length() > 0) {
+        new_intervals.insert(intersection);
+      }
+      p->upper < q->upper ? ++q : ++p;
+    }
+    std::swap(intervals, new_intervals);
+    intersect(rest...);
+  }
+
+  template <typename... Rest>
+  void merge(const Ranges &other_ranges, const Rest &...rest) {
+    for (auto iter = other_ranges.begin(); iter != other_ranges.end(); ++iter) {
+      this->merge(*iter);
+    }
+    merge(rest...);
+  }
 };
-
-
-
-
 
 inline std::ostream &operator<<(std::ostream &os,
                                 const Ranges::Interval &interval) {

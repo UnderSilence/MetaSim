@@ -22,16 +22,13 @@ public:
   using DataArrayBase::ranges;
   std::vector<Type> array;
 
-  DataArray(std::string &name, const Ranges &ranges,
-            const std::vector<Type> &array)
-      : DataArrayBase(name, ranges), array(array) {}
+  DataArray(const std::string &name, const Ranges &ranges, std::vector<Type> &&array)
+      : DataArrayBase(name, ranges), array(std::move(array)) {}
 };
 
 // RandomAccessIterator
-class DataArrayIterator {
-  
-};
-  
+class DataArrayIterator {};
+
 } // namespace MS
 
 #endif
