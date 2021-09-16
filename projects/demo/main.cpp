@@ -10,7 +10,7 @@
 void run_ranges_test() {
 
   MS::Ranges ranges({2, 6});
-  MS::Ranges ranges_1({7, 8});
+  MS::Ranges ranges_1({3, 5});
   std::cout << ranges << std::endl;
   ranges.erase({3, 4});
   std::cout << ranges << std::endl;
@@ -26,10 +26,16 @@ void run_ranges_test() {
 void run_data_container_test() {
   using namespace MS;
   MS::DataContainer container;
-  auto attr_tag = AttributeTag<float>("rho");
-  container.append(attr_tag, {0, 5}, 1.0f);
-  // container.append(MS::AttributeTag<>)
-  auto &attr_arr = container.get_array(attr_tag);
+  auto rho_tag = AttributeTag<float>("rho");
+  auto mass_tag = AttributeTag<float>("mass");
+  auto pf_tag = AttributeTag<float>("pf");
+
+  container.append(rho_tag, {0, 5}, 1.0f);
+  container.append(mass_tag, {1, 3}, 2.0f);
+  container.append(pf_tag, {2, 4}, 0.0f);
+  
+  auto iter = container.ZipIterator(rho_tag, mass_tag, pf_tag);
+  std::cout << iter.common_ranges << std::endl;
   return;
 }
 
@@ -61,6 +67,7 @@ auto main() -> int {
 
       MPMSimulator<3> simulator;
   */
-  run_data_container_test();
+  run_ranges_test();
+  // run_data_container_test();
   return 0;
 }

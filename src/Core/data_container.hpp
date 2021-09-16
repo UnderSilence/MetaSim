@@ -19,11 +19,10 @@ template <typename T> struct AttributeTag {
       : type_name(type_name), type_hash(std::hash<std::string>()(type_name)) {}
 };
 
+template <typename... Types> class DataContainerIterator;
 // Dataset for manifolds attributes
 class DataContainer {
 public:
-  using Interval = Ranges::Interval;
-
   // number of entry
   int total_size;
   std::unordered_map<size_t, std::unique_ptr<DataArrayBase>> dataset;
@@ -35,10 +34,10 @@ public:
                         std::vector<Type>(interval.length(), init_value));
   }
 
-  template<typename Type>
-  DataArray<Type> &get_array(const AttributeTag<Type>& attr_tag) {
+  template <typename Type>
+  DataArray<Type> &get_array(const AttributeTag<Type> &attr_tag) {
     auto iter = dataset.find(attr_tag.type_hash);
-    return static_cast<DataArray<Type>&>(*iter->second);
+    return static_cast<DataArray<Type> &>(*iter->second);
   }
 
   template <typename Type>
@@ -49,9 +48,10 @@ public:
 
     if (iter == dataset.end()) {
       // if attribute array not found
-      auto ret = dataset.emplace(attr_tag.type_hash,
-                                 std::make_unique<DataArray<Type>>(
-                                     attr_tag.type_name, Ranges(interval), std::move(array)));
+      auto ret = dataset.emplace(
+          attr_tag.type_hash,
+          std::make_unique<DataArray<Type>>(
+              attr_tag.type_name, Ranges(interval), std::move(array)));
       return static_cast<DataArray<Type> &>(*ret.first->second);
     } else {
       auto &old = static_cast<DataArray<Type> &>(*iter->second);
@@ -63,9 +63,33 @@ public:
       return old;
     }
   }
+
+  template <typename... Types>
+  DataContainerIterator<Types...>
+  ZipIterator(const AttributeTag<Types> &...tags) {
+    return DataContainerIterator<Types...>(get_array(tags)...);
+  }
 };
 
-class DataContainerIterator {};
+// data zip iterator in common_ranges
+template <typename... Types> class DataContainerIterator {
+public:
+  std::tuple<DataArrayIterator<Types>...> iterators;
+  Ranges common_ranges;
+  Ranges::const_iterator ranges_iter;
+  // current entry&value index
+  int entry_id;
+
+
+  DataContainerIterator(DataArray<Types> &...array_set)
+      : iterators(array_set.array.begin()...),
+        common_ranges(array_set.ranges...),
+        ranges_iter(common_ranges.cbegin()),entry_id(0) {}
+
+  DataContainerIterator() = default;
+
+  std::tuple<Types...> base() const;
+};
 
 } // namespace MS
 

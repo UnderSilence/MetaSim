@@ -13,6 +13,7 @@ public:
 
   DataArrayBase(const std::string &name, const Ranges &ranges)
       : name(name), ranges(ranges) {}
+
 };
 
 // entry_index -> data_index -> data
@@ -27,7 +28,16 @@ public:
 };
 
 // RandomAccessIterator
-class DataArrayIterator {};
+template<typename Type>
+class DataArrayIterator {
+public:
+  Ranges sub_ranges;
+  typename std::vector<Type>::iterator iter;
+  int entry_id, value_id;
+  DataArrayIterator(typename std::vector<Type>::iterator iter) : iter(iter) {
+
+  }
+};
 
 } // namespace MS
 
