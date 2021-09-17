@@ -73,6 +73,36 @@ public:
 
 // template <typename Iter>
 // using select_access_type_for = typename Iter::reference;
+//// some template meta programming
+template <typename... Args, std::size_t... Index>
+auto any_match_impl(std::tuple<Args...> const &lhs,
+                    std::tuple<Args...> const &rhs,
+                    std::index_sequence<Index...>) -> bool {
+  auto result = false;
+  result = (... | (std::get<Index>(lhs) == std::get<Index>(rhs)));
+  return result;
+}
+
+template <typename... Args>
+auto any_match(std::tuple<Args...> const &lhs, std::tuple<Args...> const &rhs)
+    -> bool {
+  return any_match_impl(lhs, rhs, std::index_sequence_for<Args...>{});
+}
+
+template <typename... Args, std::size_t... Index>
+auto all_match_impl(std::tuple<Args...> const &lhs,
+                    std::tuple<Args...> const &rhs,
+                    std::index_sequence<Index...>) -> bool {
+  auto result = false;
+  result = (... & (std::get<Index>(lhs) == std::get<Index>(rhs)));
+  return result;
+}
+
+template <typename... Args>
+auto all_match(std::tuple<Args...> const &lhs, std::tuple<Args...> const &rhs)
+    -> bool {
+  return all_match_impl(lhs, rhs, std::index_sequence_for<Args...>{});
+}
 
 // data zip iterator in common_ranges
 template <typename... Types> class DataContainerIterator {
@@ -89,18 +119,26 @@ public:
       : iterators(array_set.begin()...), common_ranges(array_set.ranges...),
         ranges_iter(common_ranges.cbegin()), entry_id(0) {
 
-      entry_id = common_ranges.intervals.front().lower;
-      move_iterators(entry_id);
+    entry_id = common_ranges.intervals.front().lower;
+    move_iterators(entry_id);
   }
 
   DataContainerIterator() = default;
 
-  DataContainerIterator<Types...> &operator++() { return *(*this += 1); }
+  DataContainerIterator<Types...> &operator++() { return (*this += 1); }
   DataContainerIterator<Types...> &operator+=(int step) {
     // move entry first
     step_entry(step);
     move_iterators(entry_id);
     return *this;
+  }
+
+  bool operator==(const DataContainerIterator &rhs) const {
+    return all_match(iterators, rhs.iterators);
+  }
+
+  bool operator!=(const DataContainerIterator &rhs) const {
+    return !(*this == rhs);
   }
 
   int step_entry(int step) {
@@ -120,9 +158,9 @@ public:
   }
 
   void move_iterators(int dst_entry_id) {
-    std::apply([&](auto &&... args) {
-      ((args.move_iterator(dst_entry_id)), ...);
-    }, iterators);
+    std::apply(
+        [&](auto &&...args) { ((args.move_iterator(dst_entry_id)), ...); },
+        iterators);
   }
 };
 

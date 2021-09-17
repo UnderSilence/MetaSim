@@ -36,13 +36,15 @@ public:
             std::vector<Type> &&array)
       : DataArrayBase(name, ranges), array(std::move(array)) {}
 
-  auto cbegin() const { return const_iterator(ranges.cbegin(), array.cbegin()); }
+  auto cbegin() const {
+    return const_iterator(ranges.cbegin(), array.cbegin());
+  }
   auto cend() const { return const_iterator(ranges.cend(), array.cend()); }
 
   auto begin() { return iterator(ranges.begin(), array.begin()); }
-  auto begin() const { return const_iterator(ranges.cend(), array.cend()); }
+  auto begin() const { return const_iterator(ranges.cbegin(), array.cbegin()); }
 
-  auto end() { return iterator(ranges.begin(), array.begin()); }
+  auto end() { return iterator(ranges.end(), array.end()); }
   auto end() const { return const_iterator(ranges.cend(), array.cend()); }
 
   class iterator {
@@ -63,8 +65,9 @@ public:
     DataIter data_iter;
     int entry_id;
 
-    iterator(const ConstRangesIter &ranges_iter, const DataIter &data_iter, int entry_id = -1)
-        : ranges_iter(ranges_iter), data_iter(data_iter), entry_id(entry_id) {}
+    iterator(const ConstRangesIter &ranges_iter, const DataIter &data_iter)
+        : ranges_iter(ranges_iter), data_iter(data_iter),
+          entry_id(ranges_iter->lower) {}
 
     // move entry to dst, redirect data_iter & ranges_iter simultaneously
 
@@ -76,6 +79,14 @@ public:
     auto operator+=(difference_type step) {
       step_entry(step);
       return *this;
+    }
+
+    bool operator == (const iterator& rhs) const {
+      return ranges_iter == rhs.ranges_iter && data_iter == rhs.data_iter;
+    }
+
+    bool operator != (const iterator& rhs) const {
+      return !(*this == rhs);
     }
 
     int step_entry(difference_type step) {
@@ -92,7 +103,7 @@ public:
 
     void move_iterator(int dst_entry_id) {
       int step = 0;
-      while(dst_entry_id > ranges_iter->upper) {
+      while (dst_entry_id > ranges_iter->upper) {
         step += ranges_iter->upper - entry_id;
         entry_id = (++ranges_iter)->lower;
       }
