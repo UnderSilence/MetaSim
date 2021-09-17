@@ -26,15 +26,15 @@ void run_ranges_test() {
 void run_data_container_test() {
   using namespace MS;
   MS::DataContainer container;
-  auto rho_tag = AttributeTag<float>("rho");
-  auto mass_tag = AttributeTag<float>("mass");
-  auto pf_tag = AttributeTag<float>("pf");
+  auto rho_tag = TypeTag<float>("rho");
+  auto mass_tag = TypeTag<float>("mass");
+  auto pf_tag = TypeTag<float>("pf");
 
   container.append(rho_tag, {0, 5}, 1.0f);
   container.append(mass_tag, {1, 3}, 2.0f);
   container.append(pf_tag, {2, 4}, 0.0f);
   
-  auto iter = container.ZipIterator(rho_tag, mass_tag, pf_tag);
+  auto iter = container.SubsetIterator(rho_tag, mass_tag, pf_tag);
   std::cout << iter.common_ranges << std::endl;
   return;
 }

@@ -27,6 +27,7 @@ public:
     }
     int length() const { return upper - lower; }
   };
+
   // merge constructor
   Ranges() = default;
   Ranges(const Ranges &ranges) = default;
@@ -47,8 +48,8 @@ public:
 
   auto cbegin() const { return intervals.cbegin(); }
   auto cend() const { return intervals.cend(); }
-  auto begin() const { return intervals.begin(); }
-  auto end() const { return intervals.end(); }
+  auto begin() { return intervals.begin(); }
+  auto end() { return intervals.end(); }
   auto size() const { return intervals.size(); }
   auto length() const {}
 
@@ -87,7 +88,7 @@ public:
   // void erase(int lower, int upper) { erase({lower, upper}); }
 
   void intersect() {}
-  /*
+  /* // not needed
   void intersect(const Interval &interval) {
     auto p = std::equal_range(intervals.begin(), intervals.end(), interval);
     if (p.first != p.second) {
@@ -113,10 +114,6 @@ public:
 
   template <typename... Rest>
   void intersect(const Ranges &other_ranges, const Rest &...rest) {
-
-    // std::cout << "intersect between : " << *this << " ," << other_ranges <<
-    // "\n";
-
     auto p = begin(), q = other_ranges.begin();
     std::vector<Interval> new_intervals;
     while (p != end() && q != other_ranges.end()) {
