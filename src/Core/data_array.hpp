@@ -15,70 +15,101 @@ public:
       : name(name), ranges(ranges) {}
 };
 
-template <typename Type> class DataArrayIterator;
-// entry_index -> data_index -> data
-template <typename Type> class DataArray : public DataArrayBase {
+template <typename Type, typename A = std::allocator<Type>>
+class DataArray : public DataArrayBase {
 public:
   using DataArrayBase::name;
   using DataArrayBase::ranges;
 
-  using iterator = class DataArrayIterator<Type>;
-  using value_type = Type;
-  using reference = Type &;
+  // using iterator = DataArrayIterator<Type>;
+  // using const_iterator = DataArrayIterator<Type>;
 
-  std::vector<Type> array;
+  using value_type = typename A::value_type;
+  using reference = typename A::reference;
+  using const_reference = typename A::const_reference;
+  using difference_type = typename A::difference_type;
+  using size_type = typename A::size_type;
+
+  std::vector<Type, A> array;
 
   DataArray(const std::string &name, const Ranges &ranges,
             std::vector<Type> &&array)
       : DataArrayBase(name, ranges), array(std::move(array)) {}
 
-  auto begin() -> iterator const { return iterator(this); }
+  auto cbegin() const { return const_iterator(ranges.cbegin(), array.cbegin()); }
+  auto cend() const { return const_iterator(ranges.cend(), array.cend()); }
 
-  auto end() -> iterator const { return iterator(this, -1); }
-};
+  auto begin() { return iterator(ranges.begin(), array.begin()); }
+  auto begin() const { return const_iterator(ranges.cend(), array.cend()); }
 
-// RandomAccessIterator Subset iterator
-template <typename Type> class DataArrayIterator {
-public:
-  using value_type = Type;
-  using reference = Type &;
-  using RangesIter = Ranges::iterator;
-  using DataIter = typename std::vector<Type>::iterator;
+  auto end() { return iterator(ranges.begin(), array.begin()); }
+  auto end() const { return const_iterator(ranges.cend(), array.cend()); }
 
-  Ranges &ranges;
-  std::vector<Type> &array;
+  class iterator {
+    using pointer = typename A::pointer;
+    // using iterator_category = std::forward_iterator_tag;
+    pointer ptr_;
 
-  RangesIter ranges_iter;
-  DataIter data_iter;
-  int entry_id;
+  public:
+    iterator(const iterator &) = default;
+    ~iterator() = default;
 
-  DataArrayIterator(const DataArray<Type> &self, int entry_id = 0)
-      : ranges(self.ranges), array(self.array), ranges_iter(ranges.begin()),
-        data_iter(self.begin()), entry_id(entry_id) {}
+    using RangesIter = Ranges::iterator;
+    using ConstRangesIter = Ranges::const_iterator;
+    using DataIter = typename std::vector<Type>::iterator;
+    using ConstDataIter = typename std::vector<Type>::const_iterator;
 
-  // move entry to dst, redirect data_iter & ranges_iter simultaneously
+    ConstRangesIter ranges_iter;
+    DataIter data_iter;
+    int entry_id;
 
-  auto operator*() -> reference { return *data_iter; }
+    iterator(const ConstRangesIter &ranges_iter, const DataIter &data_iter, int entry_id = -1)
+        : ranges_iter(ranges_iter), data_iter(data_iter), entry_id(entry_id) {}
 
-  int step_entry(int step) {
-    while (ranges_iter != ranges.end() &&
-           entry_id + step > ranges_iter->upper) {
-      auto diff = ranges_iter->upper - entry_id;
-      step -= diff;
-      data_iter += diff;
-      entry_id = (++ranges_iter)->lower;
+    // move entry to dst, redirect data_iter & ranges_iter simultaneously
+
+    auto operator*() -> reference { return *data_iter; }
+    auto operator++() -> reference {
+      step_entry(1);
+      return *this;
+    }
+    auto operator+=(difference_type step) {
+      step_entry(step);
+      return *this;
     }
 
-    if (ranges_iter == ranges.end() && step > 0) {
-      entry_id = -1;
-      data_iter = array.end();
-    } else {
+    int step_entry(difference_type step) {
+      while (entry_id + step > ranges_iter->upper) {
+        auto diff = ranges_iter->upper - entry_id;
+        step -= diff;
+        data_iter += diff;
+        entry_id = (++ranges_iter)->lower;
+      }
       entry_id += step;
       data_iter += step;
+      return entry_id;
     }
-    return entry_id;
-  }
+
+    void move_iterator(int dst_entry_id) {
+      int step = 0;
+      while(dst_entry_id > ranges_iter->upper) {
+        step += ranges_iter->upper - entry_id;
+        entry_id = (++ranges_iter)->lower;
+      }
+      step += dst_entry_id - entry_id;
+      entry_id = dst_entry_id;
+      data_iter += step;
+    }
+  };
+
+  using const_iterator = iterator;
 };
+
+template <typename _Ty>
+using DataArrayIterator = typename DataArray<_Ty>::iterator;
+
+template <typename _Ty>
+using ConstDataArrayIterator = typename DataArray<_Ty>::const_iterator;
 
 } // namespace MS
 

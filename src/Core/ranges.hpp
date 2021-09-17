@@ -6,6 +6,7 @@
 #include <vector>
 
 // #include <iostream>
+#include <numeric>
 
 namespace MS {
 
@@ -48,13 +49,32 @@ public:
 
   auto cbegin() const { return intervals.cbegin(); }
   auto cend() const { return intervals.cend(); }
+
   auto begin() { return intervals.begin(); }
   auto end() { return intervals.end(); }
+  auto begin() const { return intervals.cbegin(); }
+  auto end() const { return intervals.cend(); }
+
   auto size() const { return intervals.size(); }
-  auto length() const {}
+  // calculate ranges length sum between [lower, upper)
+  auto length(int lower, int upper) const {
+    Interval interval{lower, upper};
+    auto p = std::equal_range(intervals.begin(), intervals.end(), interval);
+    auto result = 0;
+    for (auto iter = p.first; iter != p.second; iter++) {
+      if (lower > iter->lower) {
+        result += iter->upper - lower;
+      } else if (upper < iter->upper) {
+        result += upper - iter->lower;
+      } else {
+        result += iter->length();
+      }
+    }
+    return result;
+  }
 
   template <typename... Rest>
-  void merge(const Interval &interval, const Rest &...rest) {
+  void merge(const Interval &interval, Rest &&...rest) {
     auto p = std::equal_range(intervals.begin(), intervals.end(), interval);
     if (p.first == p.second) {
       // equal ranges not found, merge directly
@@ -113,8 +133,9 @@ public:
   */
 
   template <typename... Rest>
-  void intersect(const Ranges &other_ranges, const Rest &...rest) {
-    auto p = begin(), q = other_ranges.begin();
+  void intersect(const Ranges &other_ranges, Rest &&...rest) {
+    auto p = begin();
+    auto q = other_ranges.begin();
     std::vector<Interval> new_intervals;
     while (p != end() && q != other_ranges.end()) {
       auto intersection = p->intersect(*q);
@@ -128,7 +149,7 @@ public:
   }
 
   template <typename... Rest>
-  void merge(const Ranges &other_ranges, const Rest &...rest) {
+  void merge(const Ranges &other_ranges, Rest &&...rest) {
     for (auto iter = other_ranges.begin(); iter != other_ranges.end(); ++iter) {
       this->merge(*iter);
     }

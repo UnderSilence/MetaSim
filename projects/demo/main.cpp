@@ -35,7 +35,8 @@ void run_data_container_test() {
   container.append(pf_tag, {2, 4}, 0.0f);
   
   auto iter = container.SubsetIterator(rho_tag, mass_tag, pf_tag);
-  std::cout << iter.common_ranges << std::endl;
+  auto [a, b, c] = *iter;
+  std::cout << a << "," << b << "," << c << std::endl;
   return;
 }
 
@@ -67,7 +68,7 @@ auto main() -> int {
 
       MPMSimulator<3> simulator;
   */
-  run_ranges_test();
-  // run_data_container_test();
+  // run_ranges_test();
+  run_data_container_test();
   return 0;
 }

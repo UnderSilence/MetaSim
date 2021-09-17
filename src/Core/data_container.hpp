@@ -71,14 +71,13 @@ public:
   }
 };
 
-//template <typename Iter>
-//using select_access_type_for = typename Iter::reference;
-
+// template <typename Iter>
+// using select_access_type_for = typename Iter::reference;
 
 // data zip iterator in common_ranges
 template <typename... Types> class DataContainerIterator {
 public:
-  using value_type = std::tuple<typename DataArrayIterator<Types>::reference...>;
+  using value_type = std::tuple<typename DataArray<Types>::reference...>;
 
   std::tuple<DataArrayIterator<Types>...> iterators;
   Ranges common_ranges;
@@ -87,36 +86,44 @@ public:
   int entry_id;
 
   DataContainerIterator(DataArray<Types> &...array_set)
-      : iterators(array_set...),
-        common_ranges(array_set.ranges...), ranges_iter(common_ranges.cbegin()),
-        entry_id(0) {}
+      : iterators(array_set.begin()...), common_ranges(array_set.ranges...),
+        ranges_iter(common_ranges.cbegin()), entry_id(0) {
+
+      entry_id = common_ranges.intervals.front().lower;
+      move_iterators(entry_id);
+  }
 
   DataContainerIterator() = default;
 
-  DataContainerIterator<Types...> &operator++() { return (*this += 1); }
+  DataContainerIterator<Types...> &operator++() { return *(*this += 1); }
   DataContainerIterator<Types...> &operator+=(int step) {
     // move entry first
     step_entry(step);
+    move_iterators(entry_id);
+    return *this;
   }
 
   int step_entry(int step) {
-      while(ranges_iter != common_ranges.cend() &&
-            entry_id + step > ranges_iter->upper) {
-        auto diff = ranges_iter->upper - entry_id;
-        step -= diff;
-        entry_id = (++ranges_iter)->lower;
-      }
-      return entry_id = (ranges_iter != common_ranges.cend()) ?
-                        entry_id + step : -1;
+    while (ranges_iter != common_ranges.cend() &&
+           entry_id + step > ranges_iter->upper) {
+      auto diff = ranges_iter->upper - entry_id;
+      step -= diff;
+      entry_id = (++ranges_iter)->lower;
+    }
+    return entry_id =
+               (ranges_iter != common_ranges.cend()) ? entry_id + step : -1;
   }
 
-  auto operator *() -> value_type
-  {
-    return std::apply([](auto && ... args) {
-      return value_type(*args...);
+  auto operator*() -> value_type {
+    return std::apply([](auto &&...args) { return value_type(*args...); },
+                      iterators);
+  }
+
+  void move_iterators(int dst_entry_id) {
+    std::apply([&](auto &&... args) {
+      ((args.move_iterator(dst_entry_id)), ...);
     }, iterators);
   }
-
 };
 
 } // namespace MS
