@@ -27,7 +27,7 @@ public:
   using value_type = typename A::value_type;
   using reference = typename A::reference;
   using const_reference = typename A::const_reference;
-  using difference_type = typename A::difference_type;
+  using difference_type = std::ptrdiff_t;
   using size_type = typename A::size_type;
 
   std::vector<Type, A> array;
@@ -48,8 +48,8 @@ public:
   auto end() const { return const_iterator(ranges.cend(), array.cend()); }
 
   class iterator {
-    using range_pointer = std::weak_ptr<Ranges>;
-    using data_pointer = std::weak_ptr<Type>;
+    using range_pointer = Interval *;
+    using data_pointer = Type *;
     // using iterator_category = std::forward_iterator_tag;
     // pointer ptr_;
 
@@ -58,23 +58,23 @@ public:
     iterator(const iterator &) = default;
     ~iterator() = default;
 
-    using RangesIter = Ranges::iterator;
-    using ConstRangesIter = Ranges::const_iterator;
-    using DataIter = typename std::vector<Type>::iterator;
-    using ConstDataIter = typename std::vector<Type>::const_iterator;
+    //    using RangesIter = Ranges::iterator;
+    //    using ConstRangesIter = Ranges::const_iterator;
+    //    using DataIter = typename std::vector<Type>::iterator;
+    //    using ConstDataIter = typename std::vector<Type>::const_iterator;
 
-    Ranges::const_iterator ranges_iter;
+    // Ranges::const_iterator ranges_iter;
 
-    range_pointer ptr_range;
-    data_pointer ptr_data;
+    // range_pointer ptr_range;
+    // data_pointer ptr_data;
 
-    DataIter data_iter;
+    Interval *raw_interval_ptr;
+    Type *raw_data_ptr;
     int entry_id;
 
-    iterator(const ConstRangesIter &ranges_iter, const DataIter &data_iter)
-        : ranges_iter(ranges_iter), ptr_range(ranges_iter), ,data_iter(data_iter),
-          entry_id(ranges_iter->lower) {
-    }
+    iterator(range_pointer interval_ptr, data_pointer data_ptr)
+        : raw_interval_ptr(interval_ptr), raw_data_ptr(data_ptr),
+          entry_id(interval_ptr->lower) {}
 
     // move entry to dst, redirect data_iter & ranges_iter simultaneously
 
@@ -95,7 +95,7 @@ public:
     bool operator!=(const iterator &rhs) const { return !(*this == rhs); }
 
     int step_entry(difference_type step) {
-      while (entry_id + step >= ranges_iter->upper) {
+      while (entry_id + step >= raw_interval_ptr->upper) {
         auto diff = ranges_iter->upper - entry_id;
         step -= diff;
         data_iter += diff;
@@ -121,11 +121,11 @@ public:
   using const_iterator = iterator;
 };
 
-//template <typename _Ty>
-//using DataArrayIterator = typename DataArray<_Ty>::iterator;
+// template <typename _Ty>
+// using DataArrayIterator = typename DataArray<_Ty>::iterator;
 //
-//template <typename _Ty>
-//using ConstDataArrayIterator = typename DataArray<_Ty>::const_iterator;
+// template <typename _Ty>
+// using ConstDataArrayIterator = typename DataArray<_Ty>::const_iterator;
 
 } // namespace MS
 
