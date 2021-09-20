@@ -48,11 +48,13 @@ public:
   auto end() const { return const_iterator(ranges.cend(), array.cend()); }
 
   class iterator {
-    using pointer = typename A::pointer;
+    using range_pointer = std::weak_ptr<Ranges>;
+    using data_pointer = std::weak_ptr<Type>;
     // using iterator_category = std::forward_iterator_tag;
-    pointer ptr_;
+    // pointer ptr_;
 
   public:
+    iterator() = default;
     iterator(const iterator &) = default;
     ~iterator() = default;
 
@@ -61,13 +63,18 @@ public:
     using DataIter = typename std::vector<Type>::iterator;
     using ConstDataIter = typename std::vector<Type>::const_iterator;
 
-    ConstRangesIter ranges_iter;
+    Ranges::const_iterator ranges_iter;
+
+    range_pointer ptr_range;
+    data_pointer ptr_data;
+
     DataIter data_iter;
     int entry_id;
 
     iterator(const ConstRangesIter &ranges_iter, const DataIter &data_iter)
-        : ranges_iter(ranges_iter), data_iter(data_iter),
-          entry_id(ranges_iter->lower) {}
+        : ranges_iter(ranges_iter), ptr_range(ranges_iter), ,data_iter(data_iter),
+          entry_id(ranges_iter->lower) {
+    }
 
     // move entry to dst, redirect data_iter & ranges_iter simultaneously
 
@@ -81,16 +88,14 @@ public:
       return *this;
     }
 
-    bool operator == (const iterator& rhs) const {
-      return ranges_iter == rhs.ranges_iter && data_iter == rhs.data_iter;
+    bool operator==(const iterator &rhs) const {
+      return entry_id == rhs.entry_id;
     }
 
-    bool operator != (const iterator& rhs) const {
-      return !(*this == rhs);
-    }
+    bool operator!=(const iterator &rhs) const { return !(*this == rhs); }
 
     int step_entry(difference_type step) {
-      while (entry_id + step > ranges_iter->upper) {
+      while (entry_id + step >= ranges_iter->upper) {
         auto diff = ranges_iter->upper - entry_id;
         step -= diff;
         data_iter += diff;
@@ -103,7 +108,7 @@ public:
 
     void move_iterator(int dst_entry_id) {
       int step = 0;
-      while (dst_entry_id > ranges_iter->upper) {
+      while (dst_entry_id >= ranges_iter->upper) {
         step += ranges_iter->upper - entry_id;
         entry_id = (++ranges_iter)->lower;
       }
@@ -116,11 +121,11 @@ public:
   using const_iterator = iterator;
 };
 
-template <typename _Ty>
-using DataArrayIterator = typename DataArray<_Ty>::iterator;
-
-template <typename _Ty>
-using ConstDataArrayIterator = typename DataArray<_Ty>::const_iterator;
+//template <typename _Ty>
+//using DataArrayIterator = typename DataArray<_Ty>::iterator;
+//
+//template <typename _Ty>
+//using ConstDataArrayIterator = typename DataArray<_Ty>::const_iterator;
 
 } // namespace MS
 

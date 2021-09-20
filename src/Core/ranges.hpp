@@ -73,6 +73,12 @@ public:
     return result;
   }
 
+  auto length() const {
+    return std::accumulate(
+        intervals.cbegin(), intervals.cend(), 0,
+        [](int result, auto &&rhs) -> auto { return result + rhs.length(); });
+  }
+
   template <typename... Rest>
   void merge(const Interval &interval, Rest &&...rest) {
     auto p = std::equal_range(intervals.begin(), intervals.end(), interval);

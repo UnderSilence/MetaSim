@@ -34,26 +34,28 @@ void run_data_container_test() {
   container.append(mass_tag, {1, 3}, {2,4,6});
   container.append(pf_tag, {2, 4}, {8,10,12});
   
-  auto iter = container.SubsetIterator(rho_tag, mass_tag, pf_tag);
-  auto& [a, b, c] = *iter;
-  std::cout << "common_ranges: " << iter.common_ranges << std::endl;
-  std::cout << a++ << "," << b++ << "," << c++ << std::endl;
-  auto iter_copy = iter;
-  puts(iter_copy == iter? "Yes" : "No");
+  auto subset = container.Subset(rho_tag, mass_tag, pf_tag);
+  auto iter = subset.begin();
+  std::cout << typeid(*iter).name() << std::endl;
 
-  auto& [d, e, f] = *(++iter);
-  std::cout << d << "," << e << "," << f << std::endl;
-  puts(iter_copy == iter? "Yes" : "No");
-
-  auto& [i,j,k] = *iter_copy;
-  std::cout << i << "," << j << "," << k << std::endl;
-  return;
-
-  auto iter2 = container.SubsetIterator(rho_tag, mass_tag);
-  auto ranges = iter2.common_ranges;
-  for(auto it = ranges.begin() ; it != ranges.end(); it++) {
-    
+  for(auto& [a, b, c] : subset) {
+    std::cout << a << "," << b << "," << c << std::endl;
   }
+//   auto& [a, b, c] = *iter;
+//  std::cout << a++ << "," << b++ << "," << c++ << std::endl;
+//  auto iter_copy = iter;
+//  puts(iter_copy == iter? "Yes" : "No");
+//
+//  auto& [d, e, f] = *(++iter);
+//  std::cout << d << "," << e << "," << f << std::endl;
+//  puts(iter_copy == iter? "Yes" : "No");
+//
+//  auto& [i,j,k] = *iter_copy;
+//  std::cout << i << "," << j << "," << k << std::endl;
+//
+//  auto subset2 = container.Subset(rho_tag, mass_tag);
+//  auto ranges = subset.sub_ranges;
+//  std::cout << "ranges:" <<ranges << " length:" << ranges.length() << std::endl;
 }
 
 auto main() -> int {
