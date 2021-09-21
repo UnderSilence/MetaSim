@@ -138,8 +138,7 @@ public:
     end_entry = begin_entry + sub_ranges.length();
   }
 
-  auto size() const {
-    return sub_ranges.length(); }
+  auto size() const { return sub_ranges.length(); }
 
   class iterator {
   public:
@@ -148,19 +147,28 @@ public:
         std::tuple<typename DataArray<Types>::iterator...>;
 
     Ranges::const_iterator ranges_iter;
+    Ranges::const_iterator ranges_end;
+    Ranges::const_iterator ranges_begin;
+
     int entry_id;
     iterator_set_type iterators;
     iterator() = default;
     iterator(const iterator &) = default;
     ~iterator() = default;
 
-    iterator(const Ranges::const_iterator &ranges_iter, int entry_id,
-             array_set_type &array_set)
-        : ranges_iter(ranges_iter), entry_id(entry_id), iterators() {
+    // data_id means data offset in data_array [0, size())
+    iterator(DataContainerSubset &self, int data_id)
+        : ranges_iter(self.sub_ranges.cbegin()),
+          ranges_end(self.sub_ranges.cend()),
+          ranges_begin(self.sub_ranges.cbegin()) {
+      // initialize
       iterators = std::apply(
           [](auto &&...args) { return iterator_set_type(args.begin()...); },
-          array_set);
-      move_iterators(entry_id);
+          self.array_set);
+
+      *this += data_id;
+      // advance_entry(data_id); // get its entry_id first
+      // advance_iterators_to(entry_id);
     }
 
     bool operator==(const iterator &rhs) const {
@@ -175,13 +183,13 @@ public:
     }
     auto operator++() { return (*this += 1); }
     auto operator+=(int step) {
-      // move entry first
-      step_entry(step);
-      move_iterators(entry_id);
+      // move entry_id by step
+      advance_entry(step);
+      advance_iterators_to(entry_id);
       return *this;
     }
 
-    int step_entry(int step) {
+    int advance_entry(int step) {
       while (entry_id + step >= ranges_iter->upper) {
         auto diff = ranges_iter->upper - entry_id;
         step -= diff;
@@ -190,9 +198,9 @@ public:
       return entry_id = entry_id + step;
     }
 
-    void move_iterators(int dst_entry_id) {
+    void advance_iterators_to(int dst_entry_id) {
       std::apply(
-          [&](auto &&...iters) { ((iters.move_iterator(dst_entry_id)), ...); },
+          [&](auto &&...iters) { ((iters.advance_entry_to(dst_entry_id)), ...); },
           iterators);
       entry_id = dst_entry_id;
     }
