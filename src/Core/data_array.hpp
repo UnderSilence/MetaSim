@@ -1,6 +1,7 @@
 #ifndef METASIM_DATA_ARRAY_HPP
 #define METASIM_DATA_ARRAY_HPP
 
+#include "Core/range_set.hpp"
 #include "Core/ranges.hpp"
 #include <string>
 #include <vector>
@@ -11,12 +12,12 @@ public:
   std::string name;
   MS::Ranges ranges;
 
-  DataArrayBase(const std::string &name, const Ranges &ranges)
-      : name(name), ranges(ranges) {}
+  DataArrayBase(const std::string& name, const Ranges& ranges)
+    : name(name)
+    , ranges(ranges) {}
 };
 
-template <typename Type, typename A = std::allocator<Type>>
-class DataArray : public DataArrayBase {
+template<typename Type, typename A = std::allocator<Type>> class DataArray : public DataArrayBase {
 public:
   using DataArrayBase::name;
   using DataArrayBase::ranges;
@@ -32,13 +33,11 @@ public:
 
   std::vector<Type, A> array;
 
-  DataArray(const std::string &name, const Ranges &ranges,
-            std::vector<Type> &&array)
-      : DataArrayBase(name, ranges), array(std::move(array)) {}
+  DataArray(const std::string& name, const Ranges& ranges, std::vector<Type>&& array)
+    : DataArrayBase(name, ranges)
+    , array(std::move(array)) {}
 
-  auto cbegin() const {
-    return const_iterator(ranges.cbegin(), array.cbegin());
-  }
+  auto cbegin() const { return const_iterator(ranges.cbegin(), array.cbegin()); }
   auto cend() const { return const_iterator(ranges.cend(), array.cend()); }
 
   auto begin() { return iterator(ranges.begin(), array.begin()); }
@@ -48,14 +47,14 @@ public:
   auto end() const { return const_iterator(ranges.cend(), array.cend()); }
 
   class iterator {
-    using range_pointer = Interval *;
-    using data_pointer = Type *;
+    using range_pointer = Interval*;
+    using data_pointer = Type*;
     // using iterator_category = std::forward_iterator_tag;
     // pointer ptr_;
 
   public:
     iterator() = default;
-    iterator(const iterator &) = default;
+    iterator(const iterator&) = default;
     ~iterator() = default;
 
     //    using RangesIter = Ranges::iterator;
@@ -68,13 +67,14 @@ public:
     // range_pointer ptr_range;
     // data_pointer ptr_data;
 
-    Interval *raw_interval_ptr;
-    Type *raw_data_ptr;
+    Interval* raw_interval_ptr;
+    Type* raw_data_ptr;
     int entry_id;
 
     iterator(range_pointer interval_ptr, data_pointer data_ptr)
-        : raw_interval_ptr(interval_ptr), raw_data_ptr(data_ptr),
-          entry_id(interval_ptr->lower) {}
+      : raw_interval_ptr(interval_ptr)
+      , raw_data_ptr(data_ptr)
+      , entry_id(interval_ptr->lower) {}
 
     // move entry to dst, redirect data_iter & ranges_iter simultaneously
 
@@ -88,11 +88,9 @@ public:
       return *this;
     }
 
-    bool operator==(const iterator &rhs) const {
-      return entry_id == rhs.entry_id;
-    }
+    bool operator==(const iterator& rhs) const { return entry_id == rhs.entry_id; }
 
-    bool operator!=(const iterator &rhs) const { return !(*this == rhs); }
+    bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
 
     int step_entry(difference_type step) {
       while (entry_id + step >= raw_interval_ptr->upper) {
@@ -127,6 +125,6 @@ public:
 // template <typename _Ty>
 // using ConstDataArrayIterator = typename DataArray<_Ty>::const_iterator;
 
-} // namespace MS
+}   // namespace MS
 
 #endif
