@@ -17,14 +17,11 @@ int main() {
 
   std::cout << "curr test_set:" << test_set << std::endl;
 
-  tbb::mutex temp_lock;
   test_set.lg2_grain_size = 7;
 
   auto test_body = [](const auto& range_set) {
-    {
-      tbb::mutex::scoped_lock(temp_lock);
+      tbb::mutex::scoped_lock();
       std::cout << range_set.length() << std::endl;
-    }
   };
 
   tbb::parallel_for(test_set, test_body);

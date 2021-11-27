@@ -18,6 +18,7 @@ namespace MS {
 
 // A Range Set class with tbb::split enable
 
+
 // tbb split construct function
 // Cutting RangeSet
 RangeSet::RangeSet(RangeSet& other, tbb::split)

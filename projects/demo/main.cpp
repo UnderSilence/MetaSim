@@ -4,25 +4,11 @@
 
 #include "particles.hpp"
 #include <iostream>
+#include <tbb/parallel_for.h>
+#include <tuple>
+
 // #include "MPM/mpm_grid.hpp"
 // #include "MPM/mpm_simulator.hpp"
-
-void run_ranges_test() {
-
-  MS::Ranges ranges({2, 6});
-  MS::Ranges ranges_1({3, 5});
-  std::cout << ranges << std::endl;
-  ranges.erase({3, 4});
-  std::cout << ranges << std::endl;
-  ranges.erase({5, 6});
-  std::cout << ranges << std::endl;
-
-  ranges.intersect(ranges_1);
-  std::cout << ranges << std::endl;
-  ranges.merge({2, 6});
-  std::cout << ranges << std::endl;
-}
-
 void run_data_container_test() {
   using namespace MS;
   MS::DataContainer container;
@@ -30,32 +16,50 @@ void run_data_container_test() {
   auto mass_tag = TypeTag<float>("mass");
   auto pf_tag = TypeTag<float>("pf");
 
-  container.append(rho_tag, {0, 5}, {1,3,5,7,9});
-  container.append(mass_tag, {1, 3}, {2,4,6});
-  container.append(pf_tag, {2, 4}, {8,10,12});
-  
-  auto subset = container.Subset(rho_tag, mass_tag, pf_tag);
-  auto iter = subset.begin();
-  std::cout << typeid(*iter).name() << std::endl;
+  container.append(rho_tag, {0, 5000}, 1.0f);
+  container.append(mass_tag, {1000, 6000}, 2.0f);
+  container.append(pf_tag, {2000, 4000}, 3.0f);
 
-  for(auto& [a, b, c] : subset) {
-    std::cout << a << "," << b << "," << c << std::endl;
-  }
-//   auto& [a, b, c] = *iter;
-//  std::cout << a++ << "," << b++ << "," << c++ << std::endl;
-//  auto iter_copy = iter;
-//  puts(iter_copy == iter? "Yes" : "No");
-//
-//  auto& [d, e, f] = *(++iter);
-//  std::cout << d << "," << e << "," << f << std::endl;
-//  puts(iter_copy == iter? "Yes" : "No");
-//
-//  auto& [i,j,k] = *iter_copy;
-//  std::cout << i << "," << j << "," << k << std::endl;
-//
-//  auto subset2 = container.Subset(rho_tag, mass_tag);
-//  auto ranges = subset.sub_ranges;
-//  std::cout << "ranges:" <<ranges << " length:" << ranges.length() << std::endl;
+  auto subset = container.Subset(rho_tag, mass_tag, pf_tag);
+  // auto iter = subset.begin();
+  // std::cout << typeid(*iter).name() << std::endl;
+
+  // subset.foreach_element([&](auto& rho, auto& mass, auto& pf) {
+  //   std::cout << rho << "," << mass << "," << pf << std::endl;
+  // });
+
+  // for (auto it = subset.begin(); it != subset.end(); ++it) {
+  //   auto& rho = std::get<0>(*it);
+  //   auto& mass = std::get<1>(*it);
+  //   auto& pf = std::get<2>(*it);
+  //   std::cout << rho << "," << mass << "," << pf << std::endl;
+  // }
+
+  auto test_body = [](auto&& subset) {
+    std::cout << subset.sub_ranges << ", length: " << subset.size() << std::endl;
+    subset.foreach_element([&](auto& rho, auto& mass, auto& pf) {
+      std::cout << rho << "," << mass << "," << pf << std::endl;
+    });
+  };
+
+  tbb::parallel_for(subset, test_body);
+
+  // for (const auto& [a, b, c] : subset) { std::cout << a << "," << b << "," << c << std::endl; }
+  //   auto& [a, b, c] = *iter;
+  //  std::cout << a++ << "," << b++ << "," << c++ << std::endl;
+  //  auto iter_copy = iter;
+  //  puts(iter_copy == iter? "Yes" : "No");
+  //
+  //  auto& [d, e, f] = *(++iter);
+  //  std::cout << d << "," << e << "," << f << std::endl;
+  //  puts(iter_copy == iter? "Yes" : "No");
+  //
+  //  auto& [i,j,k] = *iter_copy;
+  //  std::cout << i << "," << j << "," << k << std::endl;
+  //
+  //  auto subset2 = container.Subset(rho_tag, mass_tag);
+  //  auto ranges = subset.sub_ranges;
+  //  std::cout << "ranges:" <<ranges << " length:" << ranges.length() << std::endl;
 }
 
 auto main() -> int {

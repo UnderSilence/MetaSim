@@ -32,16 +32,19 @@ struct RangeSet {
   // log2 of grain size, set default to 2^7 = 128
   size_t lg2_grain_size{7};
 
+  static RangeSet All;
+  static RangeSet Empty;
+
   using iterator = std::vector<Range>::iterator;
   using const_iterator = std::vector<Range>::const_iterator;
 
   RangeSet() = default;
   RangeSet(const RangeSet& ranges) = default;
   template<typename... Rest>
-  RangeSet(const RangeSet& other, const Rest&... rest)
+  RangeSet(const RangeSet& other, Rest&&... rest)
     : ranges(other.ranges)
     , lg2_grain_size(other.lg2_grain_size) {
-    intersect(rest...);
+    (intersect(rest), ...);
   }
   RangeSet(const std::initializer_list<Range>& range_list) {
     for (auto& range : range_list) { merge(range); }
@@ -75,6 +78,9 @@ struct RangeSet {
   auto rbegin() const { return ranges.crbegin(); }
   auto rend() const { return ranges.crend(); }
 
+  auto& front() { return ranges.front(); }
+  auto& back() { return ranges.back(); }
+
   RangeSet& operator&=(const RangeSet& range_set) { return intersect(range_set), *this; }
   RangeSet& operator|=(const RangeSet& range_set) { return merge(range_set), *this; }
   RangeSet operator&(const RangeSet& range_set) { return RangeSet{*this} &= range_set; }
@@ -82,7 +88,8 @@ struct RangeSet {
 
   void intersect() {}
   void intersect(const RangeSet& other_ranges);
-  template<typename... Rest> void intersect(const Range& range, Rest&&... rest) {
+  template<typename... Rest>
+  void intersect(const Range& range, Rest&&... rest) {
     auto p = std::equal_range(ranges.begin(), ranges.end(), range);
     if (p.first != p.second) {
       auto leftmost_upper = p.first->upper;
@@ -106,7 +113,8 @@ struct RangeSet {
 
   void merge() {}
   void merge(const RangeSet& other_ranges);
-  template<typename... Rest> void merge(const Range& range, Rest&&... rest) {
+  template<typename... Rest>
+  void merge(const Range& range, Rest&&... rest) {
     auto p = std::equal_range(ranges.begin(), ranges.end(), range);
     if (p.first == p.second) {
       // equal ranges not found, merge directly

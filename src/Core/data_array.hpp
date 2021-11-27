@@ -38,11 +38,13 @@ public:
     : DataArrayBase(name, ranges)
     , array(std::move(array)) {}
 
-  auto cbegin() const { return const_iterator(ranges.cbegin(), array.cbegin()); }
-  auto cend() const { return const_iterator(ranges.cend(), array.cend()); }
-  auto begin() { return iterator(ranges.begin(), array.begin()); }
+  auto cbegin() const { return const_iterator(*this, 0); }
+  auto cend() const { return const_iterator(*this, size()); }
+
+  auto begin() { return iterator(*this, 0); }
   auto end() { return iterator(*this, size()); }
-  auto begin() const { return const_iterator(ranges.cbegin(), array.cbegin()); }
+
+  auto begin() const { return const_iterator(*this, 0); }
   auto end() const { return const_iterator(*this, size()); }
 
   auto size() const { return array.size(); }
@@ -63,33 +65,37 @@ public:
 
     ranges_iterator ranges_iter;
     data_iterator data_iter;
-
-    // Interval *raw_interval_ptr;
-    // Type *raw_data_ptr;
-    Range* range_ptr;
-    Type* data_ptr;
-
     // Global id to specify element
     int entry_id;
 
-    iterator(DataArray& array, size_type index) {
-      // restore entryId ?
+    iterator(DataArray& self, size_type index) {
+      // restore entryId ? its ok to compare with end?
+      if (index == -1 || index >= self.ranges.length()) {
+        // end iterator
+        ranges_iter = self.ranges.end();
+        data_iter = self.array.end();
+        entry_id = self.ranges.back().upper;
+      } else {
+        ranges_iter = self.ranges.begin();
+        data_iter = self.array.begin();
+        entry_id = self.ranges.front().lower;
+        *this += index;
+      }
     }
 
     // move entry to dst, redirect data_iter & ranges_iter simultaneously
-
     auto operator*() -> reference { return *data_iter; }
     auto operator++() -> reference { return (*this += 1); }
     auto operator+=(difference_type step) {
-      advance_entry(step);
+      advance(step);
       return *this;
     }
 
     bool operator==(const iterator& rhs) const { return data_iter == rhs.data_iter; }
     bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
 
-    int advance_entry(int step) {
-      while (entry_id + step >= ranges_iter->upper) {
+    int advance(int step) {
+      while (step > 0 && entry_id + step >= ranges_iter->upper) {
         auto diff = ranges_iter->upper - entry_id;
         step -= diff;
         data_iter += diff;
@@ -100,14 +106,15 @@ public:
       return entry_id;
     }
 
-    void advance_entry_to(int dst_entry_id) {
-      int step = 0;
-      while (dst_entry_id >= ranges_iter->upper) {
+    // What if target_entry outside of the boundary?
+    void advance_to(int target_entry) {
+      auto step = 0;
+      while (target_entry >= ranges_iter->upper) {
         step += ranges_iter->upper - entry_id;
         entry_id = (++ranges_iter)->lower;
       }
-      step += dst_entry_id - entry_id;
-      entry_id = dst_entry_id;
+      step += target_entry - entry_id;
+      entry_id = target_entry;
       data_iter += step;
     }
   };
