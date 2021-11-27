@@ -1,21 +1,38 @@
 
-#include <bits/stdc++.h>
+#include "Core/range_set.hpp"
+#include <iostream>
+#include <tbb/mutex.h>
 #include <tbb/parallel_for.h>
+#include <tbb/spin_mutex.h>
 #include <tbb/tick_count.h>
 
-#include "Core/range_set.hpp"
 using namespace MS;
 
 int main() {
 
   RangeSet test_set;
-  test_set.merge({0, 200});
-  test_set.merge({300, 800});
+  test_set.merge({0, 128});
+  // test_set.merge({300, 800});
+  // test_set.intersect({{100, 500}, {600, 700}});
 
-  auto test_body = [](const auto& range_set) { std::cout << range_set << std::endl; };
+  std::cout << "curr test_set:" << test_set << std::endl;
+
+  tbb::mutex temp_lock;
+  test_set.lg2_grain_size = 7;
+
+  auto test_body = [](const auto& range_set) {
+    {
+      tbb::mutex::scoped_lock(temp_lock);
+      std::cout << range_set.length() << std::endl;
+    }
+  };
 
   tbb::parallel_for(test_set, test_body);
 
+
+  std::vector<int> x{1, 3, 4, 5};
+  auto it = x.end();
+  printf("test end %d\n", *it);
 
   // auto t0 = tbb::tick_count::now();
 

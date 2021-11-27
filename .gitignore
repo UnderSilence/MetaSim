@@ -18,4 +18,5 @@ cmake-*/
 # Configuration
 .vscode/
 .idea/
+_deps/
 

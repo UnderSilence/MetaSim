@@ -4,13 +4,12 @@
 
 #include <algorithm>
 #include <ostream>
-#include <set>
-#include <vector>
-// #include <iostream>
-#include <cassert>
-#include <numeric>
 #include <tbb/tbb_stddef.h>
+#include <vector>
 
+// for MSVC's mom sakes
+#undef max
+#undef min
 
 
 namespace MS {
@@ -25,6 +24,7 @@ struct Range {
   }
   int length() const { return upper - lower; }
 };
+
 
 // A Range Set class with tbb::split enable
 struct RangeSet {
@@ -43,42 +43,13 @@ struct RangeSet {
     , lg2_grain_size(other.lg2_grain_size) {
     intersect(rest...);
   }
+  RangeSet(const std::initializer_list<Range>& range_list) {
+    for (auto& range : range_list) { merge(range); }
+  }
 
   // tbb split construct function
   // Cutting RangeSet
-  RangeSet(RangeSet& other, tbb::split)
-    : lg2_grain_size(other.lg2_grain_size) {
-
-    auto total_length = other.length();
-    auto num_grains = total_length >> lg2_grain_size;
-    auto split_length = (num_grains - (num_grains >> 1)) << lg2_grain_size;
-
-    if (split_length >= total_length) {
-      // no split
-      return;
-    }
-
-    auto& ranges_to_split = other.ranges;
-    while (!ranges_to_split.empty() && split_length) {
-      auto& curr_range = ranges_to_split.back();
-      auto curr_length = curr_range.length();
-      ranges.push_back(curr_range);
-
-      if (split_length > curr_length) {
-        ranges_to_split.pop_back();
-        split_length -= curr_length;
-      } else {
-        auto diff = curr_length - split_length;
-        ranges.back().lower += diff;
-        curr_range.upper -= diff;
-        if (curr_range.length() == 0) { ranges_to_split.pop_back(); }
-        split_length = 0;
-      }
-    }
-
-    std::reverse(ranges.begin(), ranges.end());
-    assert(total_length == other.length() + this->length());
-  }
+  RangeSet(RangeSet& other, tbb::split);
 
   int length() const {
     // hahahh
@@ -104,22 +75,37 @@ struct RangeSet {
   auto rbegin() const { return ranges.crbegin(); }
   auto rend() const { return ranges.crend(); }
 
-  void intersect() {}
-  template<typename... Rest> void intersect(const RangeSet& other_ranges, Rest&&... rest) {
-    auto p = begin();
-    auto q = other_ranges.begin();
-    std::vector<Range> new_ranges;
+  RangeSet& operator&=(const RangeSet& range_set) { return intersect(range_set), *this; }
+  RangeSet& operator|=(const RangeSet& range_set) { return merge(range_set), *this; }
+  RangeSet operator&(const RangeSet& range_set) { return RangeSet{*this} &= range_set; }
+  RangeSet operator|(const RangeSet& range_set) { return RangeSet{*this} |= range_set; }
 
-    while (p != end() && q != other_ranges.end()) {
-      auto intersection = p->intersect(*q);
-      if (intersection.length() > 0) { new_ranges.push_back(intersection); }
-      p->upper < q->upper ? ++p : ++q;
+  void intersect() {}
+  void intersect(const RangeSet& other_ranges);
+  template<typename... Rest> void intersect(const Range& range, Rest&&... rest) {
+    auto p = std::equal_range(ranges.begin(), ranges.end(), range);
+    if (p.first != p.second) {
+      auto leftmost_upper = p.first->upper;
+      auto rightmost_lower = std::prev(p.second)->lower;
+      std::vector<Range> new_ranges;
+      if (std::distance(p.first, p.second) == 1) {
+        new_ranges.push_back(range.intersect(*p.first));
+      } else {
+        new_ranges.push_back(range.intersect(*p.first));
+        new_ranges.insert(new_ranges.end(), std::next(p.first), std::prev(p.second));
+        new_ranges.push_back(range.intersect(*std::prev(p.second)));
+      }
+      std::swap(ranges, new_ranges);
+    } else {
+      // no intersections
+      ranges.clear();
     }
-    std::swap(ranges, new_ranges);
     intersect(rest...);
   }
 
+
   void merge() {}
+  void merge(const RangeSet& other_ranges);
   template<typename... Rest> void merge(const Range& range, Rest&&... rest) {
     auto p = std::equal_range(ranges.begin(), ranges.end(), range);
     if (p.first == p.second) {
@@ -133,16 +119,12 @@ struct RangeSet {
     }
     merge(rest...);
   }
-  template<typename... Rest> void merge(const RangeSet& other_ranges, Rest&&... rest) {
-    for (auto iter = other_ranges.begin(); iter != other_ranges.end(); ++iter) {
-      this->merge(*iter);
-    }
-    merge(rest...);
-  }
+
+  void erase(const Range& range);
 };
 
-inline std::ostream& operator<<(std::ostream& os, const Range& interval) {
-  os << "[" << interval.lower << "," << interval.upper << ")";
+inline std::ostream& operator<<(std::ostream& os, const Range& range) {
+  os << "[" << range.lower << "," << range.upper << ")";
   return os;
 }
 
