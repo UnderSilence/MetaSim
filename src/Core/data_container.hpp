@@ -64,6 +64,7 @@ public:
                        std::make_move_iterator(array.begin()),
                        std::make_move_iterator(array.end()));
       // release array memory cause its empty now
+      array.resize(0);
       return old;
     }
   }
@@ -72,7 +73,7 @@ public:
   //  DataContainerIterator<Types...>
   //  SubsetIterator(const TypeTag<Types> &...tags) {
   //    return DataContainerIterator<Types...>(get_array(tags)...);
-  //  }0
+  //  }
 
   template<typename... Types>
   DataSubset<Types...> Subset(const TypeTag<Types>&... tags) {

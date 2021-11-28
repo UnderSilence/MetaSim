@@ -16,9 +16,9 @@ void run_data_container_test() {
   auto mass_tag = TypeTag<float>("mass");
   auto pf_tag = TypeTag<float>("pf");
 
-  container.append(rho_tag, {0, 5000}, 1.0f);
-  container.append(mass_tag, {1000, 6000}, 2.0f);
-  container.append(pf_tag, {2000, 4000}, 3.0f);
+  container.append(rho_tag, {0, 5}, 1.0f);
+  container.append(mass_tag, {1, 6}, 2.0f);
+  container.append(pf_tag, {2, 4}, 3.0f);
 
   auto subset = container.Subset(rho_tag, mass_tag, pf_tag);
   // auto iter = subset.begin();
@@ -35,16 +35,17 @@ void run_data_container_test() {
   //   std::cout << rho << "," << mass << "," << pf << std::endl;
   // }
 
-  auto test_body = [](auto&& subset) {
-    std::cout << subset.sub_ranges << ", length: " << subset.size() << std::endl;
-    subset.foreach_element([&](auto& rho, auto& mass, auto& pf) {
-      std::cout << rho << "," << mass << "," << pf << std::endl;
-    });
-  };
+  // auto test_body = [](auto&& subset) {
+  //   std::cout << subset.sub_ranges << ", length: " << subset.size() << std::endl;
+  //   subset.foreach_element([&](auto& rho, auto& mass, auto& pf) {
+  //     std::cout << rho << "," << mass << "," << pf << std::endl;
+  //   });
+  // };
 
-  tbb::parallel_for(subset, test_body);
+  // tbb::parallel_for(subset, test_body);
 
-  // for (const auto& [a, b, c] : subset) { std::cout << a << "," << b << "," << c << std::endl; }
+  for (auto&& [a, b, c] : subset) { std::cout << a++ << "," << b++ << "," << c++ << std::endl; }
+  for (auto&& [a, b, c] : subset) { std::cout << a << "," << b << "," << c << std::endl; }
   //   auto& [a, b, c] = *iter;
   //  std::cout << a++ << "," << b++ << "," << c++ << std::endl;
   //  auto iter_copy = iter;
