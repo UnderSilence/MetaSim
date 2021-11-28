@@ -2,8 +2,10 @@
 #define METASIM_DATA_HPP
 
 #include "core/data_array.hpp"
+#include "utils/logger.hpp"
 #include <functional>
 #include <unordered_map>
+
 
 namespace MS {
 
@@ -258,7 +260,7 @@ public:
 
       entry_id += step;
       std::apply([&](auto&&... iters) { ((iters.advance_to(entry_id)), ...); }, value_iters);
-      // printf("current entry %d\n", entry_id);
+      META_INFO("current entryid = {}", entry_id);
       return entry_id;
     }
   };

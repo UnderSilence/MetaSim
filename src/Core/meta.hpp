@@ -5,13 +5,14 @@
 #ifndef METASIM_META_HPP
 #define METASIM_META_HPP
 
-#include <array>
-#include <vector>
-#include <memory>
-#include <unordered_map>
-#include <string>
-#include <filesystem>
 #include <Eigen/Core>
+#include <array>
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 
 using real = double;
 
@@ -23,17 +24,23 @@ using Mat = Eigen::Matrix<Scalar, Row, Col>;
 
 #define NO_TBB
 
-#define SIM_LOOP(low, high, op) {     \
-    for(int i=(low);i<(high);i++) {   \
-        (op)(i);                      \
-    }                                 \
-}
+#define SIM_LOOP(low, high, op)            \
+  {                                        \
+    for (int i = (low); i < (high); i++) { \
+      (op)(i);                             \
+    }                                      \
+  }
 
 
 // context controller (program exec cwd)
 // global singleton
-class Context { 
-    std::string AbsProjDir = "D:/Workspace/.Simulations/MetaSim";
+struct Context {
+  std::string abs_project_dir{"D:/Workspace/.Simulations/MetaSim"};
+  std::string output_dir, data_dir;
+  Context() {
+    output_dir = abs_project_dir + "/output";
+    data_dir = abs_project_dir + "/data";
+  }
 } context;
 
-#endif //METASIM_META_HPP
+#endif   // METASIM_META_HPP

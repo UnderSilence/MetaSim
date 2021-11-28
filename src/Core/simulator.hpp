@@ -8,6 +8,8 @@
 #include "core/grid.hpp"
 #include "core/meta.hpp"
 #include "core/particles.hpp"
+#include "utils/logger.hpp"
+#include "utils/timer.hpp"
 
 // T: resolution, Dim: dimension
 template<typename T, int Dim>
@@ -26,9 +28,21 @@ public:
   // pure
   virtual void AdvanceFrame() = 0;
   virtual void AdvanceStep() = 0;
-
   virtual void Initialize() = 0;
 
+  Simulator() {
+    if (set_timer) {}
+  }
+
+  virtual ~Simulator() {
+    if (set_timer) {}
+  }
+
+public:
+  // some configurations
+  bool write_log{true};
+  bool write_frame{true};
+  bool set_timer{true};
 
 public:
   T dt;
