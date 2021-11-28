@@ -1,7 +1,7 @@
 #ifndef METASIM_DATA_HPP
 #define METASIM_DATA_HPP
 
-#include "Core/data_array.hpp"
+#include "core/data_array.hpp"
 #include <functional>
 #include <unordered_map>
 
@@ -129,7 +129,6 @@ public:
   RangeSet sub_ranges;
   // each array set contains its own ranges;
   array_set_type array_set;
-
   // std::vector<size_t> entry2index;
   // std::vector<size_t> index2entry;
 
@@ -156,9 +155,9 @@ public:
   auto size() const { return sub_ranges.length(); }
   auto begin() { return iterator(*this, 0); }
   auto begin() const { return const_iterator(*this, 0); }
-  // -1 set to fake ends
-  auto end() { return iterator(*this, size()); }
-  auto end() const { return const_iterator(*this, size()); }
+  // -1 set to fake ends, cause size() is costy
+  auto end() { return iterator(*this, -1); }
+  auto end() const { return const_iterator(*this, -1); }
 
   // https://stackoverflow.com/questions/43277513/c-iterator-with-hasnext-and-next
   // https://stackoverflow.com/questions/7758580/writing-your-own-stl-container/7759622#7759622
@@ -187,6 +186,7 @@ public:
     using value_type = std::tuple<typename DataArray<Types>::reference...>;
     using iterator_set_type = std::tuple<typename DataArray<Types>::iterator...>;
     using ranges_iterator = RangeSet::iterator;
+    using iterator_category = std::forward_iterator_tag;
 
     int entry_id;
     // TODO: iterators knowing its end, bad implementation?
@@ -201,48 +201,64 @@ public:
 
     // data_id means data offset in data_array [0, size())
     iterator(DataSubset& self, size_type index)
-      : entry_id(0)
-      , entry_begin(self.sub_ranges.front().lower)
-      , entry_end(self.sub_ranges.back().upper) {
-      if (index == -1 || index >= self.sub_ranges.length()) {
-        ranges_iter = self.sub_ranges.end();
-        entry_id = entry_end;
-      } else {
-        ranges_iter = self.sub_ranges.begin();
+      : entry_id(0) {
+
+      ranges_iter = self.sub_ranges.begin();
+      value_iters = std::apply([](auto&&... args) { return iterator_set_type(args.begin()...); },
+                               self.array_set);
+
+      if (!self.sub_ranges.empty()) {
+        entry_begin = self.sub_ranges.front().lower;
+        entry_end = self.sub_ranges.back().upper;
         entry_id = entry_begin;
-        value_iters = std::apply([](auto&&... args) { return iterator_set_type(args.begin()...); },
-                                 self.array_set);
-        *this += index;
+      } else {
+        entry_begin = entry_end = entry_id;
       }
+      *this += index;
     }
 
     bool operator==(const iterator& rhs) const { return entry_id == rhs.entry_id; }
-
     bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
-    value_type operator*() {
+
+    auto operator*() -> value_type {
       return std::apply([](auto&&... args) { return value_type(*args...); }, value_iters);
     }
+
+    // move entry_id by step
     auto operator++() { return (*this += 1); }
-    auto operator+=(int step) {
-      // move entry_id by step
-      safe_advance(step);
-      return *this;
-    }
+    auto operator--() { return (*this -= 1); }
+    auto operator-=(int step) { return *this += -step; }
+    auto operator+=(int step) { return safe_advance(step), *this; }
 
     // What if stepping outside of the boundary?
     int safe_advance(int step) {
       // pass over end? check it first (dirty impl.)
-      if (entry_id + step >= entry_end) {
-        entry_id = entry_end;
-        return entry_id;
+      if (entry_id + step < entry_begin || entry_id + step >= entry_end) {
+        // directly return iterator without adjust iterator
+        return entry_id = entry_end;
       }
+
+      // adjust iterator
+      // while (entry_id >= ranges_iter->upper && ranges_iter->upper != entry_end)
+      //   ++ranges_iter;
+      // while (entry_id < ranges_iter->lower && ranges_iter->lower != entry_begin)
+      //   --ranges_iter;
+
       for (; entry_id + step >= ranges_iter->upper;) {
         auto diff = ranges_iter->upper - entry_id;
         step -= diff;
         entry_id = (++ranges_iter)->lower;
       }
-      entry_id = entry_id + step;
+
+      // for (; entry_id + step < ranges_iter->lower;) {
+      //   auto diff = entry_id - ranges_iter->lower + 1;
+      //   step -= diff;
+      //   entry_id = (--ranges_iter)->upper - 1;
+      // }
+
+      entry_id += step;
       std::apply([&](auto&&... iters) { ((iters.advance_to(entry_id)), ...); }, value_iters);
+      // printf("current entry %d\n", entry_id);
       return entry_id;
     }
   };

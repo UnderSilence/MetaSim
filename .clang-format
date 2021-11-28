@@ -57,7 +57,7 @@ AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: true
 
 # 允许短的循环保持在同一行
-AllowShortLoopsOnASingleLine: true
+AllowShortLoopsOnASingleLine: false
 
 # 总是在定义返回类型后换行(deprecated)
 AlwaysBreakAfterDefinitionReturnType: None

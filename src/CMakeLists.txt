@@ -7,6 +7,11 @@ include_directories(../external/eigen)
 file(GLOB_RECURSE HEADERS "*.hpp" "*.h")
 file(GLOB_RECURSE SOURCE "*.cpp")
 
+message("cmake project directory ${CMAKE_SOURCE_DIR}")
+configure_file(
+    "${PROJECT_SOURCE_DIR}/core/meta.hpp.in" 
+    "${PROJECT_SOURCE_DIR}/core/meta.hpp")
+
 find_package(TBB CONFIG REQUIRED)
 add_library(MetaSim STATIC ${SOURCE})
 target_link_libraries(MetaSim PUBLIC TBB::tbb)

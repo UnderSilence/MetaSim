@@ -9,6 +9,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <string>
+#include <filesystem>
 #include <Eigen/Core>
 
 using real = double;
@@ -27,5 +29,11 @@ using Mat = Eigen::Matrix<Scalar, Row, Col>;
     }                                 \
 }
 
+
+// context controller (program exec cwd)
+// global singleton
+class Context { 
+    std::string AbsProjDir = "${CMAKE_SOURCE_DIR}";
+} context;
 
 #endif //METASIM_META_HPP

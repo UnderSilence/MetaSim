@@ -31,6 +31,7 @@ struct RangeSet {
   std::vector<Range> ranges;
   // log2 of grain size, set default to 2^7 = 128
   size_t lg2_grain_size{7};
+  size_t _total_length{0};
 
   static RangeSet All;
   static RangeSet Empty;
@@ -54,6 +55,8 @@ struct RangeSet {
   // Cutting RangeSet
   RangeSet(RangeSet& other, tbb::split);
 
+  // need to scan the array in O(N), avoid use it frequently.
+  // TODO: add a lazy tag for updating the array
   int length() const {
     // hahahh
     int result = 0;

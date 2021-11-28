@@ -5,7 +5,7 @@
 #ifndef METASIM_MPM_GRID_HPP
 #define METASIM_MPM_GRID_HPP
 
-#include "grid.hpp"
+#include "core/grid.hpp"
 
 
 template<class TGridData, int Dim>

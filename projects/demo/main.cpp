@@ -2,7 +2,7 @@
 // Created by Metal on 2021/5/14.
 //
 
-#include "particles.hpp"
+#include "core/particles.hpp"
 #include <iostream>
 #include <tbb/parallel_for.h>
 #include <tuple>
@@ -23,8 +23,34 @@ void run_data_container_test() {
   container.append(pf_tag, {6, 9}, 2.0f);
 
   auto subset = container.Subset(rho_tag, mass_tag, pf_tag);
-  for (auto&& [a, b, c] : subset) { std::cout << a++ << "," << b++ << "," << c++ << std::endl; }
-  for (auto&& [a, b, c] : subset) { std::cout << a << "," << b << "," << c << std::endl; }
+
+  // std::cout << "test end " << (subset.end() == subset.end()) << std::endl;
+  std::cout << "test range forward" << subset.sub_ranges << std::endl;
+  for (auto&& [a, b, c] : subset) {
+    std::cout << a++ << "," << b++ << "," << c++ << std::endl;
+  }
+  for (auto&& [a, b, c] : subset) {
+    std::cout << a << "," << b << "," << c << std::endl;
+  }
+  // loop
+  
+  // std::cout << "test range backward" << subset.sub_ranges << std::endl;
+  // auto iter_back = --subset.end();
+  // auto&& [a, b, c] = *(iter_back);
+  // std::cout << a << ", " << b << ", " << c << std::endl;
+  // --iter_back;
+  // auto&& [d, e, f] = *(iter_back);
+  // std::cout << d << ", " << e << ", " << f << std::endl;
+  // --iter_back;
+  // auto&& [i, j, k] = *(iter_back);
+  // std::cout << i << ", " << j << ", " << k << std::endl;
+
+  // while (iter_back != subset.end()) {
+  //   auto&& [a, b, c] = *iter_back;
+  //   --iter_back;
+  // }
+
+  //  for (auto&& [a, b, c] : subset) { std::cout << a << "," << b << "," << c << std::endl; }
   // auto iter = subset.begin();
   // std::cout << typeid(*iter).name() << std::endl;
 
@@ -39,14 +65,14 @@ void run_data_container_test() {
   //   std::cout << rho << "," << mass << "," << pf << std::endl;
   // }
 
-  auto test_body = [](auto&& subset) {
-    std::cout << subset.sub_ranges << ", length: " << subset.size() << std::endl;
-    subset.foreach_element([&](auto& rho, auto& mass, auto& pf) {
-      std::cout << rho << "," << mass << "," << pf << std::endl;
-    });
-  };
+  // auto test_body = [](auto&& subset) {
+  //   std::cout << subset.sub_ranges << ", length: " << subset.size() << std::endl;
+  //   subset.foreach_element([&](auto& rho, auto& mass, auto& pf) {
+  //     std::cout << rho << "," << mass << "," << pf << std::endl;
+  //   });
+  // };
 
-  tbb::parallel_for(subset, test_body);
+  // tbb::parallel_for(subset, test_body);
 
   //   auto& [a, b, c] = *iter;
   //  std::cout << a++ << "," << b++ << "," << c++ << std::endl;
