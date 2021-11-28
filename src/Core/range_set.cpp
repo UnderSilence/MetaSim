@@ -75,7 +75,7 @@ void RangeSet::merge(const RangeSet& other_ranges) {
   for (auto iter = other_ranges.begin(); iter != other_ranges.end(); ++iter) { this->merge(*iter); }
 }
 
-void RangeSet::erase(const Range& range) {
+auto RangeSet::erase(const Range& range) -> std::vector<Range>::iterator {
   auto p = std::equal_range(ranges.begin(), ranges.end(), range);
   if (p.first != p.second) {
     auto new_lower = p.first->lower;
@@ -84,6 +84,7 @@ void RangeSet::erase(const Range& range) {
     if (new_upper > range.upper) { p.second = ranges.insert(p.second, {range.upper, new_upper}); }
     if (new_lower < range.lower) { p.second = ranges.insert(p.second, {new_lower, range.lower}); }
   }
+  return p.first;
 }
 
 }   // namespace MS

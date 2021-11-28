@@ -59,6 +59,8 @@ public:
     } else {
       // update data_array with range
       auto& old = static_cast<DataArray<Type>&>(*iter->second);
+
+      // @TODO new range must at end of ranges
       old.ranges.merge(range);
       old.array.insert(old.array.end(),
                        std::make_move_iterator(array.begin()),

@@ -128,7 +128,7 @@ struct RangeSet {
     merge(rest...);
   }
 
-  void erase(const Range& range);
+  auto erase(const Range& range) -> std::vector<Range>::iterator;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Range& range) {
