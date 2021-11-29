@@ -22,16 +22,6 @@ using Vec = Eigen::Matrix<Scalar, Dim, 1>;
 template<int Row, int Col, typename Scalar = real>
 using Mat = Eigen::Matrix<Scalar, Row, Col>;
 
-#define NO_TBB
-
-#define SIM_LOOP(low, high, op)            \
-  {                                        \
-    for (int i = (low); i < (high); i++) { \
-      (op)(i);                             \
-    }                                      \
-  }
-
-
 // context controller (program exec cwd)
 // global singleton
 struct Context {

@@ -9,6 +9,8 @@
 #include "core/simulator.hpp"
 #include "mpm_grid.hpp"
 
+namespace MS {
+
 template<typename T, int Dim>
 class MPMSimulator : public Simulator<T, Dim> {
 public:
@@ -16,21 +18,17 @@ public:
   using TVI = Vec<Dim, int>;
 
   using Base = Simulator<T, Dim>;
-  using Base::cfl;
   using Base::dt;
   using Base::max_dt;
-  using Base::particles;
 
-  using Base::AddParticleGroup;
-  using Base::GetParticleGroup;
-
-  virtual void Step() override{};
+  virtual void advance_frame() override;
+  virtual void advance_step() override;
 
 public:
-  virtual void Particle2Grid(){};
-  virtual void Grid2Particle(){};
+  T cfl;
 
 public:
 };
+}   // namespace MS
 
 #endif   // METASIM_MPM_SIMULATOR_HPP

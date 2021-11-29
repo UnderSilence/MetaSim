@@ -5,17 +5,18 @@
 #ifndef METASIM_SIMULATOR_HPP
 #define METASIM_SIMULATOR_HPP
 
-#include "core/grid.hpp"
 #include "core/meta.hpp"
-#include "core/particles.hpp"
 #include "utils/logger.hpp"
-#include "utils/timer.hpp"
+#include "utils/profiler.hpp"
 
+namespace MS {
 // T: resolution, Dim: dimension
 template<typename T, int Dim>
 class Simulator {
 public:
   // return group_id
+  using TV = Vec<Dim, T>;
+  using TM = Mat<Dim, Dim, T>;
 
   using frame_callback_t = std::function<void(int)>;
   std::vector<frame_callback_t> frame_begin_callbacks;
@@ -25,10 +26,9 @@ public:
   std::vector<timestep_callback_t> step_begin_callbacks;
   std::vector<timestep_callback_t> step_end_callbacks;
 
-  // pure
-  virtual void AdvanceFrame() = 0;
-  virtual void AdvanceStep() = 0;
-  virtual void Initialize() = 0;
+  virtual void advance_frame() = 0;
+  virtual void advance_step() = 0;
+  virtual void initialize() = 0;
 
   Simulator() {
     if (set_timer) {}
@@ -52,5 +52,6 @@ public:
   int step_cnt;    // current step count
   T total_time;
 };
+}   // namespace MS
 
 #endif   // METASIM_SIMULATOR_HPP

@@ -4,3 +4,7 @@
 
 #include "MPM/mpm_simulator.hpp"
 
+namespace MS {
+
+  
+}
