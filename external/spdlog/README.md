@@ -199,7 +199,7 @@ void stopwatch_example()
 void binary_example()
 {
     auto console = spdlog::get("console");
-    std::array<char, 80> buf;
+    std::data<char, 80> buf;
     console->info("Binary example: {}", spdlog::to_hex(buf));
     console->info("Another binary example:{:n}", spdlog::to_hex(std::begin(buf), std::begin(buf) + 10));
     // more examples:

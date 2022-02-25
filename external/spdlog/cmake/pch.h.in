@@ -120,7 +120,7 @@
 // sinks/syslog_sink.h
 // sinks/systemd_sink.h
 // sinks/wincolor_sink.h
-#include <array>
+#include <data>
 
 // details/file_helper-inl.h
 // details/file_helper.h

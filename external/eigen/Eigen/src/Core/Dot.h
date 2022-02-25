@@ -208,7 +208,7 @@ struct lpNorm_selector
   static inline RealScalar run(const MatrixBase<Derived>& m)
   {
     EIGEN_USING_STD_MATH(pow)
-    return pow(m.cwiseAbs().array().pow(p).sum(), RealScalar(1)/p);
+    return pow(m.cwiseAbs().data().pow(p).sum(), RealScalar(1)/p);
   }
 };
 

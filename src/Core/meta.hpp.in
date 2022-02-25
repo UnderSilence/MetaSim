@@ -6,7 +6,7 @@
 #define METASIM_META_HPP
 
 #include <Eigen/Core>
-#include <array>
+#include <data>
 #include <filesystem>
 #include <memory>
 #include <string>

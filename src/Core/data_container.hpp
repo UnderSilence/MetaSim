@@ -5,6 +5,7 @@
 #include "utils/logger.hpp"
 #include <functional>
 #include <unordered_map>
+#include <set>
 
 
 namespace MS {
@@ -64,7 +65,7 @@ public:
 
       // @TODO new range must at end of ranges
       old.ranges.merge(range);
-      old.array.insert(old.array.end(),
+      old.data.insert(old.data.end(),
                        std::make_move_iterator(array.begin()),
                        std::make_move_iterator(array.end()));
       // release array memory cause its empty now
@@ -164,16 +165,12 @@ public:
   // https://stackoverflow.com/questions/43277513/c-iterator-with-hasnext-and-next
   // https://stackoverflow.com/questions/7758580/writing-your-own-stl-container/7759622#7759622
   // https://softwareengineering.stackexchange.com/questions/212344/is-it-bad-practice-to-make-an-iterator-that-is-aware-of-its-own-end
-
-  // 很难去完整的定义标准的 iterator 流程，不如直接抽象集合操作
-  // iterators forward increment 操作过于昂贵，定义迭代器操作复杂
-  // 可能的实现方式，参考 std::set, std::unordered_map
   template<class Op>
   void foreach_element(Op op) {
-    using iterator_set_type = std::tuple<typename DataArray<Types>::iterator...>;
+    using iterators_type = std::tuple<typename DataArray<Types>::iterator...>;
     using value_type = std::tuple<typename DataArray<Types>::reference...>;
-    iterator_set_type value_iters =
-      std::apply([](auto&&... args) { return iterator_set_type(args.begin()...); }, array_set);
+    iterators_type value_iters =
+      std::apply([](auto&&... args) { return iterators_type(args.begin()...); }, array_set);
 
     for (auto iter = sub_ranges.begin(); iter != sub_ranges.end(); ++iter) {
       for (auto entry = iter->lower; entry < iter->upper; ++entry) {
@@ -182,11 +179,12 @@ public:
       }
     }
   }
+  
 
   class iterator {
   public:
     using value_type = std::tuple<typename DataArray<Types>::reference...>;
-    using iterator_set_type = std::tuple<typename DataArray<Types>::iterator...>;
+    using iterators_type = std::tuple<typename DataArray<Types>::iterator...>;
     using ranges_iterator = RangeSet::iterator;
     using iterator_category = std::forward_iterator_tag;
 
@@ -195,7 +193,7 @@ public:
     // Maybe a range-based abstract is OK. e.g. foreach_element
     int entry_begin, entry_end;   // entry_begin used for bidirection
     ranges_iterator ranges_iter;
-    iterator_set_type value_iters;
+    iterators_type value_iters;
 
     iterator() = default;
     iterator(const iterator&) = default;
@@ -206,7 +204,7 @@ public:
       : entry_id(0) {
 
       ranges_iter = self.sub_ranges.begin();
-      value_iters = std::apply([](auto&&... args) { return iterator_set_type(args.begin()...); },
+      value_iters = std::apply([](auto&&... args) { return iterators_type(args.begin()...); },
                                self.array_set);
 
       if (!self.sub_ranges.empty()) {

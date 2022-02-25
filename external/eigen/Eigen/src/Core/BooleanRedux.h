@@ -139,7 +139,7 @@ template<typename Derived>
 inline bool DenseBase<Derived>::hasNaN() const
 {
 #if EIGEN_COMP_MSVC || (defined __FAST_MATH__)
-  return derived().array().isNaN().any();
+  return derived().data().isNaN().any();
 #else
   return !((derived().array()==derived().array()).all());
 #endif
@@ -153,7 +153,7 @@ template<typename Derived>
 inline bool DenseBase<Derived>::allFinite() const
 {
 #if EIGEN_COMP_MSVC || (defined __FAST_MATH__)
-  return derived().array().isFinite().all();
+  return derived().data().isFinite().all();
 #else
   return !((derived()-derived()).hasNaN());
 #endif

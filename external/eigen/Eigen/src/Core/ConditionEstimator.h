@@ -18,7 +18,7 @@ template <typename Vector, typename RealVector, bool IsComplex>
 struct rcond_compute_sign {
   static inline Vector run(const Vector& v) {
     const RealVector v_abs = v.cwiseAbs();
-    return (v_abs.array() == static_cast<typename Vector::RealScalar>(0))
+    return (v_abs.data() == static_cast<typename Vector::RealScalar>(0))
             .select(Vector::Ones(v.size()), v.cwiseQuotient(v_abs));
   }
 };
@@ -27,7 +27,7 @@ struct rcond_compute_sign {
 template <typename Vector>
 struct rcond_compute_sign<Vector, Vector, false> {
   static inline Vector run(const Vector& v) {
-    return (v.array() < static_cast<typename Vector::RealScalar>(0))
+    return (v.data() < static_cast<typename Vector::RealScalar>(0))
            .select(-Vector::Ones(v.size()), Vector::Ones(v.size()));
   }
 };
