@@ -2,7 +2,7 @@
 // Created by Metal on 2021/5/14.
 //
 
-#include "core/particles.hpp"
+#include "Core/particles.hpp"
 #include <iostream>
 #include <tbb/parallel_for.h>
 #include <tuple>
@@ -33,7 +33,7 @@ void run_data_container_test() {
     std::cout << a << "," << b << "," << c << std::endl;
   }
   // loop
-  
+
   // std::cout << "test range backward" << subset.sub_ranges << std::endl;
   // auto iter_back = --subset.end();
   // auto&& [a, b, c] = *(iter_back);

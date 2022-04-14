@@ -1,11 +1,12 @@
-#ifndef METASIM_DATA_HPP
-#define METASIM_DATA_HPP
+#ifndef METASIM_DATA_CONTAINER_HPP
+#define METASIM_DATA_CONTAINER_HPP
 
-#include "core/data_array.hpp"
-#include "utils/logger.hpp"
+#include "Core/data_array.hpp"
+#include "Utils/logger.hpp"
 #include <functional>
-#include <unordered_map>
 #include <set>
+#include <tuple>
+#include <unordered_map>
 
 
 namespace MS {
@@ -28,6 +29,10 @@ struct TypeTag {
 // template <typename... Types> class DataContainerIterator;
 template<typename... Types>
 class DataSubset;
+
+template<typename... Types>
+class DataSubsetIterator;
+
 // Dataset for manifolds attributes
 class DataContainer {
 public:
@@ -41,6 +46,7 @@ public:
     return append<Type>(attr_tag, range, std::vector<Type>(range.length(), init_value));
   }
 
+  // TODO: return optional references
   template<typename Type>
   DataArray<Type>& get_array(const TypeTag<Type>& attr_tag) {
     auto iter = dataset.find(attr_tag.type_hash);
@@ -66,8 +72,8 @@ public:
       // @TODO new range must at end of ranges
       old.ranges.merge(range);
       old.data.insert(old.data.end(),
-                       std::make_move_iterator(array.begin()),
-                       std::make_move_iterator(array.end()));
+                      std::make_move_iterator(array.begin()),
+                      std::make_move_iterator(array.end()));
       // release array memory cause its empty now
       array.resize(0);
       return old;
@@ -125,42 +131,51 @@ auto all_match(std::tuple<Args...> const& lhs, std::tuple<Args...> const& rhs) -
 template<typename... Types>
 class DataSubset {
 public:
-  using array_set_type = std::tuple<DataArray<Types>&...>;
+  using array_pack_reference = std::tuple<DataArray<Types>&...>;
+  using iterators_type = std::tuple<typename DataArray<Types>::iterator...>;
   using size_type = std::size_t;
 
-  // array_set's common ranges by default
+  using iterator = DataSubsetIterator<Types...>;
+  using const_iterator = DataSubsetIterator<Types...>;
+
+  // array_pack's common ranges by default
   RangeSet sub_ranges;
   // each array set contains its own ranges;
-  array_set_type array_set;
+  array_pack_reference array_pack;
   // std::vector<size_t> entry2index;
   // std::vector<size_t> index2entry;
 
   DataSubset() = default;
 
-  DataSubset(DataArray<Types>&... array_set)
-    : sub_ranges(array_set.ranges...)
-    , array_set(array_set...) {}
+  DataSubset(DataArray<Types>&... array_pack)
+    : sub_ranges(array_pack.ranges...)
+    , array_pack(array_pack...) {}
 
-  DataSubset(const RangeSet& sub_ranges, DataArray<Types>&... array_set)
-    : sub_ranges(sub_ranges, array_set.ranges...)
-    , array_set(array_set...) {}
+  DataSubset(const RangeSet& sub_ranges, DataArray<Types>&... array_pack)
+    : sub_ranges(sub_ranges, array_pack.ranges...)
+    , array_pack(array_pack...) {}
 
   // shrink
   DataSubset(const DataSubset& other) = default;
 
   DataSubset(DataSubset& other, tbb::split)
     : sub_ranges(other.sub_ranges, tbb::split{})
-    , array_set(other.array_set) {}
+    , array_pack(other.array_pack) {}
 
   bool is_divisible() const { return sub_ranges.is_divisible(); }
   bool empty() const { return sub_ranges.empty(); }
   // split data_subset
   auto size() const { return sub_ranges.length(); }
-  auto begin() { return iterator(*this, 0); }
-  auto begin() const { return const_iterator(*this, 0); }
+
+  auto array_pack_begins() const {
+    return std::apply([](auto&&... args) { return iterators_type(args.begin()...); }, array_pack);
+  }
+
+  auto begin() { return iterator(array_pack_begins(), sub_ranges.begin(), 0); }
+  auto begin() const { return const_iterator(array_pack_begins(), sub_ranges.begin(), 0); }
   // -1 set to fake ends, cause size() is costy
-  auto end() { return iterator(*this, -1); }
-  auto end() const { return const_iterator(*this, -1); }
+  auto end() { return iterator(array_pack_begins(), sub_ranges.end(), 0); }
+  auto end() const { return const_iterator(array_pack_begins(), sub_ranges.end(), 0); }
 
   // https://stackoverflow.com/questions/43277513/c-iterator-with-hasnext-and-next
   // https://stackoverflow.com/questions/7758580/writing-your-own-stl-container/7759622#7759622
@@ -170,7 +185,7 @@ public:
     using iterators_type = std::tuple<typename DataArray<Types>::iterator...>;
     using value_type = std::tuple<typename DataArray<Types>::reference...>;
     iterators_type value_iters =
-      std::apply([](auto&&... args) { return iterators_type(args.begin()...); }, array_set);
+      std::apply([](auto&&... args) { return iterators_type(args.begin()...); }, array_pack);
 
     for (auto iter = sub_ranges.begin(); iter != sub_ranges.end(); ++iter) {
       for (auto entry = iter->lower; entry < iter->upper; ++entry) {
@@ -179,91 +194,74 @@ public:
       }
     }
   }
-  
-
-  class iterator {
-  public:
-    using value_type = std::tuple<typename DataArray<Types>::reference...>;
-    using iterators_type = std::tuple<typename DataArray<Types>::iterator...>;
-    using ranges_iterator = RangeSet::iterator;
-    using iterator_category = std::forward_iterator_tag;
-
-    int entry_id;
-    // TODO: iterators knowing its end, bad implementation?
-    // Maybe a range-based abstract is OK. e.g. foreach_element
-    int entry_begin, entry_end;   // entry_begin used for bidirection
-    ranges_iterator ranges_iter;
-    iterators_type value_iters;
-
-    iterator() = default;
-    iterator(const iterator&) = default;
-    ~iterator() = default;
-
-    // data_id means data offset in data_array [0, size())
-    iterator(DataSubset& self, size_type index)
-      : entry_id(0) {
-
-      ranges_iter = self.sub_ranges.begin();
-      value_iters = std::apply([](auto&&... args) { return iterators_type(args.begin()...); },
-                               self.array_set);
-
-      if (!self.sub_ranges.empty()) {
-        entry_begin = self.sub_ranges.front().lower;
-        entry_end = self.sub_ranges.back().upper;
-        entry_id = entry_begin;
-      } else {
-        entry_begin = entry_end = entry_id;
-      }
-      *this += index;
-    }
-
-    bool operator==(const iterator& rhs) const { return entry_id == rhs.entry_id; }
-    bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
-
-    auto operator*() -> value_type {
-      return std::apply([](auto&&... args) { return value_type(*args...); }, value_iters);
-    }
-
-    // move entry_id by step
-    auto operator++() { return (*this += 1); }
-    auto operator--() { return (*this -= 1); }
-    auto operator-=(int step) { return *this += -step; }
-    auto operator+=(int step) { return safe_advance(step), *this; }
-
-    // What if stepping outside of the boundary?
-    int safe_advance(int step) {
-      // pass over end? check it first (dirty impl.)
-      if (entry_id + step < entry_begin || entry_id + step >= entry_end) {
-        // directly return iterator without adjust iterator
-        return entry_id = entry_end;
-      }
-
-      // adjust iterator
-      // while (entry_id >= ranges_iter->upper && ranges_iter->upper != entry_end)
-      //   ++ranges_iter;
-      // while (entry_id < ranges_iter->lower && ranges_iter->lower != entry_begin)
-      //   --ranges_iter;
-
-      for (; entry_id + step >= ranges_iter->upper;) {
-        auto diff = ranges_iter->upper - entry_id;
-        step -= diff;
-        entry_id = (++ranges_iter)->lower;
-      }
-
-      // for (; entry_id + step < ranges_iter->lower;) {
-      //   auto diff = entry_id - ranges_iter->lower + 1;
-      //   step -= diff;
-      //   entry_id = (--ranges_iter)->upper - 1;
-      // }
-
-      entry_id += step;
-      std::apply([&](auto&&... iters) { ((iters.advance_to(entry_id)), ...); }, value_iters);
-      META_INFO("current entryid = {}", entry_id);
-      return entry_id;
-    }
-  };
-  using const_iterator = iterator;
 };
+
+template<typename... Types>
+class DataSubsetIterator {
+public:
+  using value_type = std::tuple<typename DataArray<Types>::value_type...>;
+  using reference = std::tuple<typename DataArray<Types>::reference...>;
+  using pointer = std::tuple<typename DataArray<Types>::pointer...>;
+  using difference_type = ptrdiff_t;
+  using iterator_category = std::bidirectional_iterator_tag;
+
+  // for iterators' pack
+  using size_type = size_t;
+  using iterators_type = std::tuple<typename DataArray<Types>::iterator...>;
+
+  difference_type entry_offset;
+  RangeSet::iterator range_iter;
+  iterators_type iterators;   // all data array iterators pack
+
+  DataSubsetIterator(const DataSubsetIterator&) = default;
+  DataSubsetIterator(const iterators_type& iterators, RangeSet::iterator range_iter,
+                     difference_type entry_offset)
+    : iterators(iterators)
+    , range_iter(range_iter)
+    , entry_offset(entry_offset) {}
+
+  bool operator==(const DataSubsetIterator& rhs) {
+    return rhs.range_iter == range_iter && entry_offset == rhs.entry_offset;
+  }
+
+  auto operator+=(difference_type size_type) -> reference { return advance(size_type), *(this); }
+  auto operator-=(difference_type size_type) -> reference { return advance(size_type), *(this); }
+  auto operator++() { return *(this) += 1; }
+  auto operator--() { return *(this) -= 1; }
+
+  auto operator*() -> value_type {
+    // Entry is computed only when needed
+    std::apply([e = entry()](auto&&... iters) { ((iters.entry_to(e)), ...); }, iterators);
+    return std::apply([](auto&&... args) { return value_type(*args...); }, iterators);
+  }
+
+  // step_size could not be negative
+  // need to ensure that the incoming step_size does not exceed subset.end()
+  int advance(difference_type step_size) {
+    while (range_iter->lower + entry_offset + step_size >= range_iter->upper) {
+      range_iter++;
+      entry_offset = 0;
+      step_size -= range_iter->length() - entry_offset;
+    }
+    if (entry_offset < 0) {
+      // if access prior begin(), program will crash
+      entry_offset = range_iter->length() + entry_offset;
+      // opposite direction by reverse_iterator ?
+      while (range_iter->lower + entry_offset + step_size < range_iter->lower) {
+        range_iter--;
+        entry_offset = -1;   // -1 means full length in this contex
+        step_size -= entry_offset;
+      }
+    }
+    entry_offset += step_size;
+  }
+
+  auto entry() const {
+    return entry_offset < 0 ? range_iter->upper : range_iter->lower + entry_offset;
+  }
+};
+
+
 
 // data zip iterator in common_ranges
 // template <typename... Types> class DataContainerIterator {
@@ -276,8 +274,8 @@ public:
 //  // current entry cache
 //  int entry_id;
 //
-//  DataContainerIterator(DataArray<Types> &...array_set)
-//      : iterators(array_set.begin()...), common_ranges(array_set.ranges...),
+//  DataContainerIterator(DataArray<Types> &...array_pack)
+//      : iterators(array_pack.begin()...), common_ranges(array_pack.ranges...),
 //        ranges_iter(common_ranges.cbegin()), entry_id(0) {
 //
 //    entry_id = common_ranges.ranges.front().lower;
@@ -327,4 +325,4 @@ public:
 
 }   // namespace MS
 
-#endif   // METASIM_DATA_HPP
+#endif   // METASIM_DATA_CONTAINER_HPP

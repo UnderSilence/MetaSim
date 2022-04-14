@@ -6,6 +6,7 @@
 #define METASIM_META_HPP
 
 #include <Eigen/Core>
+#include <data>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -24,7 +25,7 @@ using Mat = Eigen::Matrix<Scalar, Row, Col>;
 // context controller (program exec cwd)
 // global singleton
 struct Context {
-  std::string abs_project_dir{"D:/Workspace/.Simulations/MetaSim"};
+  std::string abs_project_dir{"D:/Workspace/MetaSim"};
   std::string output_dir, data_dir;
   Context() {
     output_dir = abs_project_dir + "/output";
