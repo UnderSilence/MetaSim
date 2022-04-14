@@ -220,108 +220,54 @@ public:
     , range_iter(range_iter)
     , entry_offset(entry_offset) {}
 
-  bool operator==(const DataSubsetIterator& rhs) {
-    return rhs.range_iter == range_iter && entry_offset == rhs.entry_offset;
+  bool operator==(const DataSubsetIterator<T>& other) {
+    return other.range_iter ==
+               range_iter /*for compare begins, ends cause they have no legal entry()*/
+             ? (other.entry_offset == entry_offset ? true : other.entry() == entry())
+             : false;
+  }
+  reference operator*() { return {entry(), *data_iter}; }
+  reference operator++() { return *this += 1; }
+  reference operator+=(difference_type offset) {
+    // offset > 0
+    while (offset > 0 && entry() + offset >= range_iter->upper) {
+      // promise step_size > 0 && range_iter exists
+      auto jump_count = (entry_offset < 0 ? -entry_offset : range_iter->length() - entry_offset);
+      offset -= jump_count;
+
+      range_iter++;
+      entry_offset = 0;
+    }
+  }
+  reference operator--() { return *this -= 1; }
+  reference operator-=(difference_type offset) {
+    // offset > 0
+    while (offset > 0 && entry() - offset < range_iter->lower) {
+      auto jump_count = (entry_offset < 0 ? range_iter->length() + entry_offset : entry_offset) + 1;
+      offset -= jump_count;
+
+      range_iter--;
+      entry_offset = -1;   // -1 means last position in current range
+    }
   }
 
-  auto operator+=(difference_type size_type) -> reference { return advance(size_type), *(this); }
-  auto operator-=(difference_type size_type) -> reference { return advance(size_type), *(this); }
-  auto operator++() { return *(this) += 1; }
-  auto operator--() { return *(this) -= 1; }
 
   auto operator*() -> value_type {
-    // Entry is computed only when needed
-    std::apply([e = entry()](auto&&... iters) { ((iters.entry_to(e)), ...); }, iterators);
+    // Entry movement is computed only when needed
+    std::apply([e = entry()](auto&&... iters) { (iters.move_entry_to(e), ...); }, iterators);
     return std::apply([](auto&&... args) { return value_type(*args...); }, iterators);
   }
 
   // step_size could not be negative
   // need to ensure that the incoming step_size does not exceed subset.end()
   int advance(difference_type step_size) {
-    while (range_iter->lower + entry_offset + step_size >= range_iter->upper) {
-      range_iter++;
-      entry_offset = 0;
-      step_size -= range_iter->length() - entry_offset;
-    }
-    if (entry_offset < 0) {
-      // if access prior begin(), program will crash
-      entry_offset = range_iter->length() + entry_offset;
-      // opposite direction by reverse_iterator ?
-      while (range_iter->lower + entry_offset + step_size < range_iter->lower) {
-        range_iter--;
-        entry_offset = -1;   // -1 means full length in this contex
-        step_size -= entry_offset;
-      }
-    }
-    entry_offset += step_size;
+    return step_size > 0 ? *this += step_size : *this -= step_size;
   }
 
   auto entry() const {
     return entry_offset < 0 ? range_iter->upper : range_iter->lower + entry_offset;
   }
 };
-
-
-
-// data zip iterator in common_ranges
-// template <typename... Types> class DataContainerIterator {
-// public:
-//  using value_type = std::tuple<typename DataArray<Types>::reference...>;
-//
-//  std::tuple<DataArrayIterator<Types>...> iterators;
-//  RangeSet common_ranges;
-//  RangeSet::const_iterator ranges_iter;
-//  // current entry cache
-//  int entry_id;
-//
-//  DataContainerIterator(DataArray<Types> &...array_pack)
-//      : iterators(array_pack.begin()...), common_ranges(array_pack.ranges...),
-//        ranges_iter(common_ranges.cbegin()), entry_id(0) {
-//
-//    entry_id = common_ranges.ranges.front().lower;
-//    move_iterators(entry_id);
-//  }
-//
-//  DataContainerIterator() = default;
-//
-//  DataContainerIterator<Types...> &operator++() { return (*this += 1); }
-//  DataContainerIterator<Types...> &operator+=(int step) {
-//    // move entry first
-//    step_entry(step);
-//    move_iterators(entry_id);
-//    return *this;
-//  }
-//
-//  bool operator==(const DataContainerIterator &rhs) const {
-//    return all_match(iterators, rhs.iterators);
-//  }
-//
-//  bool operator!=(const DataContainerIterator &rhs) const {
-//    return !(*this == rhs);
-//  }
-//
-//  int step_entry(int step) {
-//    while (ranges_iter != common_ranges.cend() &&
-//           entry_id + step > ranges_iter->upper) {
-//      auto diff = ranges_iter->upper - entry_id;
-//      step -= diff;
-//      entry_id = (++ranges_iter)->lower;
-//    }
-//    return entry_id =
-//               (ranges_iter != common_ranges.cend()) ? entry_id + step : -1;
-//  }
-//
-//  auto operator*() -> value_type {
-//    return std::apply([](auto &&...args) { return value_type(*args...); },
-//                      iterators);
-//  }
-//
-//  void move_iterators(int dst_entry_id) {
-//    std::apply(
-//        [&](auto &&...iters) { ((iters.move_iterator(dst_entry_id)), ...); },
-//        iterators);
-//  }
-//};
 
 }   // namespace MS
 

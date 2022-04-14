@@ -20,3 +20,6 @@ cmake-*/
 .idea/
 _deps/
 .vs/
+
+# configuration output cpp files
+src/Core/meta.hpp

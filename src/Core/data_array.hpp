@@ -94,8 +94,7 @@ public:
     // offset > 0
     while (offset > 0 && entry() + offset >= range_iter->upper) {
       // promise step_size > 0 && range_iter exists
-      auto jump_count =
-        (entry_offset < 0 ? -entry_offset : range_iter->length() - entry_offset) + 1;
+      auto jump_count = (entry_offset < 0 ? -entry_offset : range_iter->length() - entry_offset);
       offset -= jump_count;
       data_iter += jump_count;
 
@@ -128,112 +127,27 @@ public:
     return step_size > 0 ? *this += step_size : *this -= step_size;
   }
 
-private:
+  // need ensure target_entry is legal
+  T& move_entry_to(int target_entry) {
+    int diff_count = target_entry - entry();
+
+    if (diff_count > 0) {
+      while (target_entry >= range_iter->upper) {
+        data_iter += range_iter->upper - entry();
+        range_iter++;
+      }
+
+    } else {
+      while (target_entry < range_iter->lower)
+        data_iter -= entry() - range_iter->lower + 1;
+      range_iter--;
+    }
+
+    entry_offset = target_entry - range_iter->lower;
+    return *data_iter;
+  }
 };
 
-
-
-// class iterator {
-// public:
-//   iterator() = default;
-//   iterator(const iterator&) = default;
-//   ~iterator() = default;
-
-//  using iterator_category = std::forward_iterator_tag;
-//  using ranges_iterator = RangeSet::iterator;
-//  using data_iterator = typename std::vector<Type>::iterator;
-
-//  ranges_iterator ranges_iter;
-//  data_iterator data_iter;
-//  // Global id to specify element
-//  int entry_id;
-//  int entry_begin, entry_end;
-
-//  iterator(DataArray& self, size_type index)
-//    : entry_id(0) {
-//    // restore entryId ? its ok to compare with end?
-//    ranges_iter = self.ranges.begin();
-//    data_iter = self.data.begin();
-
-//    if (!self.ranges.empty()) {
-//      entry_begin = self.ranges.front().lower;
-//      entry_end = self.ranges.back().upper;
-//      entry_id = entry_begin;
-//    } else {
-//      entry_begin = entry_end = entry_id;
-//    }
-//    *this += index;
-//  }
-
-//  // move entry to dst, redirect data_iter & ranges_iter simultaneously
-//  auto operator*() -> reference { return *data_iter; }
-//  auto operator++() { return (*this += 1); }
-//  // auto operator--() { return (*this -= 1); }
-//  // auto operator-=(int step) { return *this += -step; }
-//  auto operator+=(int step) { return safe_advance(step), *this; }
-
-
-//  bool operator==(const iterator& rhs) const { return data_iter == rhs.data_iter; }
-//  bool operator!=(const iterator& rhs) const { return !(*this == rhs); }
-
-//  // int advance(int step) {
-//  //   while (step > 0 && entry_id + step >= ranges_iter->upper) {
-//  //     auto diff = ranges_iter->upper - entry_id;
-//  //     step -= diff;
-//  //     data_iter += diff;
-//  //     entry_id = (++ranges_iter)->lower;
-//  //   }
-//  //   entry_id += step;
-//  //   data_iter += step;
-//  //   return entry_id;
-//  // }
-
-//  // bi direction
-//  int safe_advance(int step) {
-//    // check if outside of boundary
-//    if (entry_id + step < entry_begin || entry_id + step >= entry_end) {
-//      return entry_id = entry_end;
-//    }
-//    // directly set data iter to target element
-//    data_iter += step;
-//    // update entry_id to respective position
-//    // for (; step < 0 && entry_id + step < ranges_iter->lower;) {
-//    //   auto diff = entry_id - ranges_iter->lower + 1;
-//    //   step -= diff;
-//    //   entry_id = (--ranges_iter)->upper - 1;
-//    // }
-//    for (; entry_id + step >= ranges_iter->upper;) {
-//      auto diff = ranges_iter->upper - entry_id;
-//      step -= diff;
-//      entry_id = (++ranges_iter)->lower;
-//    }
-//    return entry_id += step;
-//  }
-
-//  // What if target_entry outside of the boundary?
-//  void advance_to(int target_entry) {
-//    auto step = 0;
-//    while (target_entry >= ranges_iter->upper) {
-//      step += ranges_iter->upper - entry_id;
-//      entry_id = (++ranges_iter)->lower;
-//    }
-//    // while (target_entry < ranges_iter->lower) {
-//    //   step -= entry_id - ranges_iter->lower + 1;
-//    //   entry_id = (--ranges_iter)->upper - 1;
-//    // }
-
-//    step += target_entry - entry_id;
-//    entry_id = target_entry;
-//    data_iter += step;
-//  }
-//};
-
-// template <typename _Ty>
-// using DataArrayIterator = typename DataArray<_Ty>::iterator;
-//
-// template <typename _Ty>
-// using ConstDataArrayIterator = typename DataArray<_Ty>::const_iterator;
-
-};   // namespace MS
+} // namespace MS
 
 #endif
