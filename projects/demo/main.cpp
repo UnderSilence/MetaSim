@@ -18,20 +18,26 @@ void run_data_container_test() {
 
   container.append(rho_tag, {0, 5}, 1.0f);
   container.append(rho_tag, {5, 10}, 2.0f);
-  container.append(mass_tag, {1, 7}, 1.0f);
-  container.append(pf_tag, {2, 4}, 1.0f);
-  container.append(pf_tag, {6, 9}, 2.0f);
+  container.append(mass_tag, {1, 7}, 3.0f);
+  container.append(pf_tag, {2, 4}, 4.0f);
+  container.append(pf_tag, {6, 9}, 5.0f);
 
   auto subset = container.Subset(rho_tag, mass_tag, pf_tag);
 
   // std::cout << "test end " << (subset.end() == subset.end()) << std::endl;
   std::cout << "test range forward" << subset.sub_ranges << std::endl;
-  for (auto&& [a, b, c] : subset) {
+  
+  for (auto it = subset.begin(); it != subset.end(); ++it) {
+    auto& [a, b, c] = *it;
     std::cout << a++ << "," << b++ << "," << c++ << std::endl;
   }
-  for (auto&& [a, b, c] : subset) {
-    std::cout << a << "," << b << "," << c << std::endl;
+  
+ /* for (const auto& [a, b, c] : subset) {
+    std::cout << a++ << "," << b++ << "," << c++ << std::endl;
   }
+  for (const auto& [a, b, c] : subset) {
+    std::cout << a << "," << b << "," << c << std::endl;
+  }*/
   // loop
 
   // std::cout << "test range backward" << subset.sub_ranges << std::endl;

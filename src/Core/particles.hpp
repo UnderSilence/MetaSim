@@ -5,7 +5,7 @@
 #ifndef METASIM_PARTICLES_HPP
 #define METASIM_PARTICLES_HPP
 
-#include "meta.hpp"
+#include "forward.hpp"
 #include "Core/data_container.hpp"
 
 class IAttributeArray {

@@ -88,44 +88,15 @@ public:
 
   template<typename... Types>
   DataSubset<Types...> Subset(const TypeTag<Types>&... tags) {
-    return DataSubset<Types...>(get_array(tags)...);
+    return {get_array(tags)...};
   }
 
   template<typename... Types>
   DataSubset<Types...> Subset(const RangeSet& sub_ranges, const TypeTag<Types>&... tags) {
-    return DataSubset<Types...>(sub_ranges, get_array(tags)...);
+    return {sub_ranges, get_array(tags)...};
   }
 };
 
-// template <typename Iter>
-// using select_access_type_for = typename Iter::reference;
-/// some template meta programming
-template<typename... Args, std::size_t... Index>
-auto any_match_impl(std::tuple<Args...> const& lhs, std::tuple<Args...> const& rhs,
-                    std::index_sequence<Index...>) -> bool {
-  auto result = false;
-  result = (... | (std::get<Index>(lhs) == std::get<Index>(rhs)));
-  return result;
-}
-
-template<typename... Args>
-auto any_match(std::tuple<Args...> const& lhs, std::tuple<Args...> const& rhs) -> bool {
-  return any_match_impl(lhs, rhs, std::index_sequence_for<Args...>{});
-}
-
-template<typename... Args, std::size_t... Index>
-auto all_match_impl(std::tuple<Args...> const& lhs, std::tuple<Args...> const& rhs,
-                    std::index_sequence<Index...>) -> bool {
-  auto result = false;
-  result = (... & (std::get<Index>(lhs) == std::get<Index>(rhs)));
-  return result;
-}
-
-template<typename... Args>
-auto all_match(std::tuple<Args...> const& lhs, std::tuple<Args...> const& rhs) -> bool {
-  return all_match_impl(lhs, rhs, std::index_sequence_for<Args...>{});
-}
-///
 
 // Data subset accessor, can't edit
 template<typename... Types>
@@ -167,15 +138,18 @@ public:
   // split data_subset
   auto size() const { return sub_ranges.length(); }
 
-  auto array_pack_begins() const {
+  auto array_pack_begins() {
     return std::apply([](auto&&... args) { return iterators_type(args.begin()...); }, array_pack);
+  }
+  auto array_pack_ends() {
+    return std::apply([](auto&&... args) { return iterators_type(args.end()...); }, array_pack);
   }
 
   auto begin() { return iterator(array_pack_begins(), sub_ranges.begin(), 0); }
   auto begin() const { return const_iterator(array_pack_begins(), sub_ranges.begin(), 0); }
   // -1 set to fake ends, cause size() is costy
-  auto end() { return iterator(array_pack_begins(), sub_ranges.end(), 0); }
-  auto end() const { return const_iterator(array_pack_begins(), sub_ranges.end(), 0); }
+  auto end() { return iterator(array_pack_ends(), sub_ranges.end(), 0); }
+  auto end() const { return const_iterator(array_pack_ends(), sub_ranges.end(), 0); }
 
   // https://stackoverflow.com/questions/43277513/c-iterator-with-hasnext-and-next
   // https://stackoverflow.com/questions/7758580/writing-your-own-stl-container/7759622#7759622
@@ -189,7 +163,7 @@ public:
 
     for (auto iter = sub_ranges.begin(); iter != sub_ranges.end(); ++iter) {
       for (auto entry = iter->lower; entry < iter->upper; ++entry) {
-        std::apply([&](auto&&... iters) { ((iters.advance_to(entry)), ...); }, value_iters);
+        std::apply([&](auto&&... iters) { ((iters.move_entry_to(entry)), ...); }, value_iters);
         std::apply([&](auto&&... args) { return op(*args...); }, value_iters);
       }
     }
@@ -220,15 +194,26 @@ public:
     , range_iter(range_iter)
     , entry_offset(entry_offset) {}
 
-  bool operator==(const DataSubsetIterator<T>& other) {
+  reference operator*() {
+    // entry movement is computed only when needed
+    std::apply([e = entry()](auto&&... iters) { ((iters.move_entry_to(e)), ...); }, iterators);
+    // return value_pack
+    return std::apply([&](auto&&... args) { return reference((* args)...); }, iterators);
+  }
+
+  bool operator==(const DataSubsetIterator<Types...>& other) {
     return other.range_iter ==
                range_iter /*for compare begins, ends cause they have no legal entry()*/
              ? (other.entry_offset == entry_offset ? true : other.entry() == entry())
              : false;
   }
-  reference operator*() { return {entry(), *data_iter}; }
-  reference operator++() { return *this += 1; }
-  reference operator+=(difference_type offset) {
+
+  bool operator!=(const DataSubsetIterator<Types...>& other) {
+    return !(* this == other);   // need other!=*this?
+  }
+
+  auto operator++() { return *this += 1; }
+  auto operator+=(difference_type offset) {
     // offset > 0
     while (offset > 0 && entry() + offset >= range_iter->upper) {
       // promise step_size > 0 && range_iter exists
@@ -238,9 +223,11 @@ public:
       range_iter++;
       entry_offset = 0;
     }
+    entry_offset = offset;
+    return *this;
   }
-  reference operator--() { return *this -= 1; }
-  reference operator-=(difference_type offset) {
+  auto operator--() { return *this -= 1; }
+  auto operator-=(difference_type offset) {
     // offset > 0
     while (offset > 0 && entry() - offset < range_iter->lower) {
       auto jump_count = (entry_offset < 0 ? range_iter->length() + entry_offset : entry_offset) + 1;
@@ -249,18 +236,13 @@ public:
       range_iter--;
       entry_offset = -1;   // -1 means last position in current range
     }
-  }
-
-
-  auto operator*() -> value_type {
-    // Entry movement is computed only when needed
-    std::apply([e = entry()](auto&&... iters) { (iters.move_entry_to(e), ...); }, iterators);
-    return std::apply([](auto&&... args) { return value_type(*args...); }, iterators);
+    entry_offset = offset;
+    return *this;
   }
 
   // step_size could not be negative
   // need to ensure that the incoming step_size does not exceed subset.end()
-  int advance(difference_type step_size) {
+  auto advance(difference_type step_size) {
     return step_size > 0 ? *this += step_size : *this -= step_size;
   }
 
