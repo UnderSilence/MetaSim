@@ -10,7 +10,7 @@
 #include "utils/profiler.hpp"
 
 namespace MS {
-// T: resolution, Dim: dimension
+// T: resolution(float), Dim: dimension
 template<typename T, int Dim>
 class Simulator {
 public:
@@ -18,11 +18,15 @@ public:
   using TV = Vec<Dim, T>;
   using TM = Mat<Dim, Dim, T>;
 
+  using sim_callback_t = std::function<void()>;
+  std::vector<sim_callback_t> sim_begin_callbacks;
+  std::vector<sim_callback_t> sim_end_callbacks;
+
   using frame_callback_t = std::function<void(int)>;
   std::vector<frame_callback_t> frame_begin_callbacks;
   std::vector<frame_callback_t> frame_end_callbacks;
   // frame, total_time
-  using timestep_callback_t = std::function<void(int, int)>;
+  using timestep_callback_t = std::function<void(int, T)>;
   std::vector<timestep_callback_t> step_begin_callbacks;
   std::vector<timestep_callback_t> step_end_callbacks;
 

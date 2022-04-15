@@ -23,21 +23,28 @@ void run_data_container_test() {
   container.append(pf_tag, {6, 9}, 5.0f);
 
   auto subset = container.Subset(rho_tag, mass_tag, pf_tag);
-
+  // https://stackoverflow.com/questions/49628401/structured-bindings-and-tuple-of-references
   // std::cout << "test end " << (subset.end() == subset.end()) << std::endl;
   std::cout << "test range forward" << subset.sub_ranges << std::endl;
-  
+
   for (auto it = subset.begin(); it != subset.end(); ++it) {
-    auto& [a, b, c] = *it;
+    auto&& [a, b, c] = *it;
     std::cout << a++ << "," << b++ << "," << c++ << std::endl;
   }
-  
- /* for (const auto& [a, b, c] : subset) {
-    std::cout << a++ << "," << b++ << "," << c++ << std::endl;
+
+  std::cout << "test range backward" << subset.sub_ranges << std::endl;
+  for (auto it = subset.rbegin(); it != subset.rend(); ++it) {
+    auto&& [a, b, c] = *it;
+      std::cout << a << "," << b << "," << c << std::endl;
   }
-  for (const auto& [a, b, c] : subset) {
-    std::cout << a << "," << b << "," << c << std::endl;
-  }*/
+
+
+  /* for (const auto& [a, b, c] : subset) {
+     std::cout << a++ << "," << b++ << "," << c++ << std::endl;
+   }
+   for (const auto& [a, b, c] : subset) {
+     std::cout << a << "," << b << "," << c << std::endl;
+   }*/
   // loop
 
   // std::cout << "test range backward" << subset.sub_ranges << std::endl;
@@ -98,7 +105,7 @@ void run_data_container_test() {
 }
 
 auto main() -> int {
-  std::cout << "Hello MetaSim!" << std::endl;
+  std::cout << "This is data_container & data_array test" << std::endl;
   /*
       ParticleContainer particle_container;
       auto& mass_array = particle_container.SetAttrArray<real>("mass");

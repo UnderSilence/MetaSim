@@ -10,7 +10,7 @@
 
 #include "Core/range_set.hpp"
 
-// for MSVC's mom sakes
+// for MSVC
 #undef max
 #undef min
 
@@ -72,10 +72,12 @@ void RangeSet::intersect(const RangeSet& other_ranges) {
 }
 
 void RangeSet::merge(const RangeSet& other_ranges) {
-  for (auto iter = other_ranges.begin(); iter != other_ranges.end(); ++iter) { this->merge(*iter); }
+  for (auto iter = other_ranges.begin(); iter != other_ranges.end(); ++iter) {
+    this->merge(*iter);
+  }
 }
 
-auto RangeSet::erase(const Range& range) -> std::vector<Range>::iterator {
+void RangeSet::erase(const Range& range) {
   auto p = std::equal_range(ranges.begin(), ranges.end(), range);
   if (p.first != p.second) {
     auto new_lower = p.first->lower;
@@ -84,7 +86,6 @@ auto RangeSet::erase(const Range& range) -> std::vector<Range>::iterator {
     if (new_upper > range.upper) { p.second = ranges.insert(p.second, {range.upper, new_upper}); }
     if (new_lower < range.lower) { p.second = ranges.insert(p.second, {new_lower, range.lower}); }
   }
-  return p.first;
 }
 
 }   // namespace MS

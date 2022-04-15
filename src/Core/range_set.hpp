@@ -48,8 +48,12 @@ struct RangeSet {
     (intersect(rest), ...);
   }
   RangeSet(const std::initializer_list<Range>& range_list) {
-    for (auto& range : range_list) { merge(range); }
+    for (auto& range : range_list) {
+      merge(range);
+    }
   }
+  RangeSet(const Range& range)
+    : ranges({range}) {}
 
   // tbb split construct function
   // Cutting RangeSet
@@ -60,7 +64,9 @@ struct RangeSet {
   int length() const {
     // hahahh
     int result = 0;
-    for (auto& range : ranges) { result += range.length(); }
+    for (auto& range : ranges) {
+      result += range.length();
+    }
     return result;
   }
 
@@ -84,20 +90,48 @@ struct RangeSet {
   auto& front() { return ranges.front(); }
   auto& back() { return ranges.back(); }
 
-  RangeSet& operator&=(const RangeSet& range_set) { return intersect(range_set), *this; }
-  RangeSet& operator|=(const RangeSet& range_set) { return merge(range_set), *this; }
-  RangeSet operator&(const RangeSet& range_set) { return RangeSet{*this} &= range_set; }
-  RangeSet operator|(const RangeSet& range_set) { return RangeSet{*this} |= range_set; }
+  // Type Range or Type RangeSet
+  template<typename TRorTRS>
+  RangeSet& operator&=(TRorTRS&& range_set) {
+    return intersect(range_set), *this;
+  }
+  template<typename TRorTRS>
+  RangeSet& operator|=(TRorTRS&& range_set) {
+    return merge(range_set), *this;
+  }
+
+  /*
+   *
+   * [1, 3) [5, 8) query x = 9
+   * return offset == 5 = 2 + 3
+   *
+   */
+  auto query_offset(int x) const {
+    auto offset = 0;
+    for (const auto& range : ranges) {
+      if (x > range.upper) {
+        offset += range.length();
+      } else {
+        offset += x - range.lower;
+        break;
+      }
+    }
+    return offset;
+  }
 
   void intersect() {}
+  // slow sometimes
   void intersect(const RangeSet& other_ranges);
+  // use binary search speedups
   template<typename... Rest>
   void intersect(const Range& range, Rest&&... rest) {
     auto p = std::equal_range(ranges.begin(), ranges.end(), range);
+    RangeSet new_range_set(*this);
+    auto& new_ranges = new_range_set.ranges;
+
     if (p.first != p.second) {
       auto leftmost_upper = p.first->upper;
       auto rightmost_lower = std::prev(p.second)->lower;
-      std::vector<Range> new_ranges;
       if (std::distance(p.first, p.second) == 1) {
         new_ranges.push_back(range.intersect(*p.first));
       } else {
@@ -110,10 +144,9 @@ struct RangeSet {
       // no intersections
       ranges.clear();
     }
-    intersect(rest...);
   }
 
-
+  // operator with single range could be faster
   void merge() {}
   void merge(const RangeSet& other_ranges);
   template<typename... Rest>
@@ -128,11 +161,24 @@ struct RangeSet {
       p.second = ranges.erase(p.first, p.second);
       ranges.insert(p.second, {new_lower, new_upper});
     }
-    merge(rest...);
+    return merge(rest...);
   }
 
-  auto erase(const Range& range) -> std::vector<Range>::iterator;
+  void erase(const Range& range);
 };
+
+template<typename TRorTRS>
+inline RangeSet operator&(RangeSet lhs, TRorTRS&& rhs) {
+  lhs &= rhs;
+  return lhs;
+}
+
+template<typename TRorTRS>
+inline RangeSet operator|(RangeSet lhs, const TRorTRS& rhs) {
+  lhs |= rhs;
+  return lhs;
+}
+
 
 inline std::ostream& operator<<(std::ostream& os, const Range& range) {
   os << "[" << range.lower << "," << range.upper << ")";
@@ -140,7 +186,9 @@ inline std::ostream& operator<<(std::ostream& os, const Range& range) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const RangeSet& set) {
-  for (auto it = set.ranges.begin(); it != set.ranges.end(); ++it) { os << *it << " "; }
+  for (auto it = set.ranges.begin(); it != set.ranges.end(); ++it) {
+    os << *it << " ";
+  }
   return os;
 }
 
